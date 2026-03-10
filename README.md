@@ -101,8 +101,9 @@ Receipt Image
 │   ├── extractor.py         # OCR + regex field extraction
 │   └── anomaly.py           # Image features + RF anomaly detection
 ├── notebooks/
-│   ├── eda.py               # EDA script
-│   ├── eda.ipynb             # Jupyter notebook
+│   ├── 01_eda.ipynb         # Exploratory analysis of the dummy dataset
+│   ├── 02_extraction.ipynb  # OCR and field extraction walkthrough
+│   ├── 03_anomaly.ipynb     # Forgery feature analysis and model demo
 │   ├── eda_dummy_data.png   # Visualization
 │   └── eda_amount_comparison.png
 ├── dummy_data/              # Challenge-provided synthetic data
