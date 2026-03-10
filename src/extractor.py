@@ -1,16 +1,14 @@
-"""
-Receipt field extractor using Tesseract OCR + regex heuristics.
+"""Receipt field extraction built on top of the OCR layer."""
 
-Extracts: vendor, date, total from scanned receipt images.
-"""
+from __future__ import annotations
+
 import re
 from typing import Optional
 
-import pytesseract
 from PIL import Image
 
-from src.config import DEFAULT_CONFIG
-from src.preprocessing import preprocess_for_ocr
+from src.extractors import extract_vendor as extract_vendor_field
+from src.ocr import extract_ocr, preprocess_image as preprocess_ocr_image
 
 
 # Common date patterns found in receipts
@@ -41,47 +39,19 @@ TOTAL_PATTERNS = [
     r'RM\s*(\d+[,.]?\d*\.?\d{0,2})',
 ]
 
-# Vendor name heuristics — typically the first few non-empty lines
-VENDOR_STOP_WORDS = {
-    'receipt', 'invoice', 'tax', 'date', 'time', 'cashier', 'total',
-    'subtotal', 'change', 'cash', 'card', 'visa', 'master', 'thank',
-    'tel', 'phone', 'fax', 'address', 'no.', 'gst', 'sst',
-}
-
-
 def preprocess_image(img: Image.Image) -> Image.Image:
     """Basic preprocessing for better OCR results."""
-    return preprocess_for_ocr(img)
+    return preprocess_ocr_image(img)
 
 
 def extract_text(image_path: str) -> str:
     """Run OCR on a receipt image."""
-    img = Image.open(image_path)
-    img = preprocess_image(img)
-    text = pytesseract.image_to_string(
-        img,
-        config=DEFAULT_CONFIG.ocr.tesseract_config,
-    )
-    return text
+    return extract_ocr(image_path).text
 
 
 def extract_vendor(text: str) -> Optional[str]:
     """Extract vendor name from OCR text (usually first meaningful line)."""
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
-    
-    for line in lines[:5]:  # Check first 5 lines
-        line_lower = line.lower()
-        # Skip lines that are just numbers, dates, or common receipt keywords
-        if re.match(r'^[\d\s\-/.:,$%]+$', line):
-            continue
-        if any(word in line_lower for word in VENDOR_STOP_WORDS):
-            continue
-        if len(line) < 3:
-            continue
-        # This is likely the vendor name
-        return line.strip()
-    
-    return None
+    return extract_vendor_field(text)
 
 
 def extract_date(text: str) -> Optional[str]:
@@ -171,10 +141,11 @@ def normalize_amount(amount_str: str) -> str:
 
 def extract_fields(image_path: str) -> dict:
     """Extract all fields from a receipt image."""
-    text = extract_text(image_path)
-    
+    ocr_result = extract_ocr(image_path)
+    text = ocr_result.text
+
     return {
-        'vendor': extract_vendor(text),
+        'vendor': extract_vendor_field(text, ocr_result.words),
         'date': extract_date(text),
         'total': extract_total(text),
         '_ocr_text': text,  # Keep for debugging
