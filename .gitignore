@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.env
+data/sroie/
+data/cord/
+data/finditagain/
+*.pt
+*.pth
+*.ckpt
+model/
+work/
+.ipynb_checkpoints/
+dist/
+*.egg-info/
