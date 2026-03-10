@@ -18,6 +18,7 @@ import os
 import sys
 import traceback
 import uuid
+from filecmp import cmp
 from pathlib import Path
 
 
@@ -128,6 +129,11 @@ def main() -> int:
         action="store_true",
         help="Show traceback on failure",
     )
+    parser.add_argument(
+        "--skip-determinism-check",
+        action="store_true",
+        help="Skip the repeated predict() validation pass",
+    )
     args = parser.parse_args()
 
     submission_dir = Path(args.submission).resolve()
@@ -144,6 +150,7 @@ def main() -> int:
 
     os.makedirs(work_dir, exist_ok=True)
     predictions_path = work_dir / "predictions.jsonl"
+    repeat_predictions_path = work_dir / "predictions_repeat.jsonl"
 
     try:
         solution = _load_solution(submission_dir)
@@ -160,6 +167,15 @@ def main() -> int:
                 f"predict() did not write predictions file: {predictions_path}"
             )
 
+        if not args.skip_determinism_check:
+            solution.predict(model_dir, str(test_dir), str(repeat_predictions_path))
+            if not repeat_predictions_path.exists():
+                raise FileNotFoundError(
+                    f"second predict() did not write predictions file: {repeat_predictions_path}"
+                )
+            if not cmp(predictions_path, repeat_predictions_path, shallow=False):
+                raise ValueError("predict() output is not deterministic across repeated runs")
+
         errors = _validate_predictions(predictions_path, test_path)
         if errors:
             print("[check] FAILED")
@@ -173,6 +189,8 @@ def main() -> int:
         print(f"[check] test records: {test_count}")
         print(f"[check] predictions:  {pred_count}")
         print(f"[check] output:       {predictions_path}")
+        if not args.skip_determinism_check:
+            print("[check] determinism: stable across 2 predict() runs")
         return 0
 
     except Exception as exc:
