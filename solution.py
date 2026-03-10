@@ -10,18 +10,17 @@ import json
 import os
 import pickle
 import sys
-from pathlib import Path
 
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.extractor import extract_fields, extract_text
+from src.config import DEFAULT_CONFIG
+from src.data.adapters import load_dataset_records, save_predictions, write_json_file
+from src.data.schema import PredictionRecord
+from src.extractor import extract_fields
 from src.anomaly import (
-    extract_image_features, features_to_vector,
-    extract_text_features, text_features_to_vector,
     train_anomaly_model, predict_anomaly,
-    FEATURE_KEYS, TEXT_FEATURE_KEYS,
 )
 
 
@@ -36,19 +35,17 @@ class DocFusionSolution:
         model_dir = os.path.join(work_dir, "model")
         os.makedirs(model_dir, exist_ok=True)
 
-        train_jsonl = os.path.join(train_dir, "train.jsonl")
-        with open(train_jsonl) as f:
-            records = [json.loads(line) for line in f]
+        records = load_dataset_records(train_dir, "train")
 
         # Learn vendor vocabulary and amount statistics
         vendors = set()
         amounts = []
 
         for r in records:
-            fields = r.get("fields", {})
-            if fields.get("vendor"):
-                vendors.add(fields["vendor"])
-            total = fields.get("total")
+            fields = r.fields
+            if fields.vendor:
+                vendors.add(fields.vendor)
+            total = fields.total
             if total:
                 try:
                     amounts.append(float(total))
@@ -64,12 +61,18 @@ class DocFusionSolution:
             "total_records": len(records),
         }
 
-        with open(os.path.join(model_dir, "stats.json"), "w") as f:
-            json.dump(stats, f, indent=2)
+        write_json_file(
+            stats,
+            os.path.join(model_dir, DEFAULT_CONFIG.data.stats_file_name),
+        )
 
         # Train anomaly detection model
         print(f"[train] Training anomaly model on {len(records)} records...")
-        train_anomaly_model(records, train_dir, model_dir)
+        train_anomaly_model(
+            [record.model_dump(mode="json") for record in records],
+            train_dir,
+            model_dir,
+        )
 
         print(f"[train] {len(vendors)} unique vendors, amount mean=${stats['amount_mean']:.2f}")
         print(f"[train] Model saved to: {model_dir}")
@@ -80,21 +83,19 @@ class DocFusionSolution:
         Run inference: extract fields + detect anomalies.
         """
         # Load model artifacts
-        with open(os.path.join(model_dir, "stats.json")) as f:
+        with open(os.path.join(model_dir, DEFAULT_CONFIG.data.stats_file_name)) as f:
             stats = json.load(f)
 
         # Load anomaly model
-        model_path = os.path.join(model_dir, "anomaly_model.pkl")
+        model_path = os.path.join(model_dir, DEFAULT_CONFIG.data.anomaly_model_file_name)
         with open(model_path, 'rb') as f:
             model_data = pickle.load(f)
 
-        test_jsonl = os.path.join(data_dir, "test.jsonl")
-        with open(test_jsonl) as f:
-            records = [json.loads(line) for line in f]
+        records = load_dataset_records(data_dir, "test")
 
         predictions = []
         for r in records:
-            img_path = os.path.join(data_dir, r["image_path"])
+            img_path = os.path.join(data_dir, r.image_path)
 
             # Extract fields via OCR
             extracted = {"vendor": None, "date": None, "total": None}
@@ -110,10 +111,10 @@ class DocFusionSolution:
                     pass
 
             # Use provided fields if available, fall back to OCR
-            fields = r.get("fields", {})
-            vendor = fields.get("vendor") or extracted.get("vendor")
-            date = fields.get("date") or extracted.get("date")
-            total = fields.get("total") or extracted.get("total")
+            fields = r.fields
+            vendor = fields.vendor or extracted.get("vendor")
+            date = fields.date or extracted.get("date")
+            total = fields.total or extracted.get("total")
 
             # Parse amount for anomaly detection
             amount_val = 0
@@ -128,16 +129,16 @@ class DocFusionSolution:
                 model_data, img_path, ocr_text, amount_val, stats
             )
 
-            predictions.append({
-                "id": r["id"],
-                "vendor": vendor,
-                "date": date,
-                "total": total,
-                "is_forged": is_forged,
-            })
+            predictions.append(
+                PredictionRecord(
+                    id=r.id,
+                    vendor=vendor,
+                    date=date,
+                    total=total,
+                    is_forged=is_forged,
+                )
+            )
 
-        with open(out_path, "w") as f:
-            for p in predictions:
-                f.write(json.dumps(p) + "\n")
+        save_predictions(predictions, out_path)
 
         print(f"[predict] Wrote {len(predictions)} predictions to {out_path}")

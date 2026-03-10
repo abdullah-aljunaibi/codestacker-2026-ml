@@ -11,10 +11,11 @@ Uses sklearn Random Forest trained on extracted features.
 import json
 import os
 import pickle
-from typing import Optional
 
 import numpy as np
-from PIL import Image, ImageFilter, ImageStat
+from PIL import Image, ImageFilter
+
+from src.config import DEFAULT_CONFIG
 
 
 def extract_image_features(image_path: str) -> dict:
@@ -211,10 +212,10 @@ def train_anomaly_model(records: list, train_dir: str, model_dir: str):
             model = None
         else:
             model = RandomForestClassifier(
-                n_estimators=100,
-                max_depth=5,
-                min_samples_leaf=2,
-                random_state=42,
+                n_estimators=DEFAULT_CONFIG.training.random_forest_estimators,
+                max_depth=DEFAULT_CONFIG.training.random_forest_max_depth,
+                min_samples_leaf=DEFAULT_CONFIG.training.random_forest_min_samples_leaf,
+                random_state=DEFAULT_CONFIG.training.random_state,
                 class_weight='balanced',
             )
             model.fit(X, y)
@@ -257,7 +258,7 @@ def predict_anomaly(model_data: dict, img_path: str, ocr_text: str,
         # Use probability threshold adjusted by base rate
         proba = model.predict_proba(X)[0]
         forged_prob = proba[1] if len(proba) > 1 else 0
-        threshold = 0.45  # Slightly below 0.5 to catch more forgeries
+        threshold = DEFAULT_CONFIG.training.anomaly_threshold
         return 1 if forged_prob >= threshold else 0
 
     # Heuristic fallback

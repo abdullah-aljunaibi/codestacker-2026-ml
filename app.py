@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.extractor import extract_fields, extract_text, preprocess_image
+from src.extractor import extract_fields
 from src.anomaly import (
     extract_image_features, extract_text_features,
     FEATURE_KEYS, TEXT_FEATURE_KEYS,

@@ -4,11 +4,13 @@ Receipt field extractor using Tesseract OCR + regex heuristics.
 Extracts: vendor, date, total from scanned receipt images.
 """
 import re
-from pathlib import Path
 from typing import Optional
 
 import pytesseract
 from PIL import Image
+
+from src.config import DEFAULT_CONFIG
+from src.preprocessing import preprocess_for_ocr
 
 
 # Common date patterns found in receipts
@@ -49,21 +51,17 @@ VENDOR_STOP_WORDS = {
 
 def preprocess_image(img: Image.Image) -> Image.Image:
     """Basic preprocessing for better OCR results."""
-    # Convert to grayscale
-    img = img.convert('L')
-    # Resize if too small
-    w, h = img.size
-    if w < 300:
-        scale = 300 / w
-        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
-    return img
+    return preprocess_for_ocr(img)
 
 
 def extract_text(image_path: str) -> str:
     """Run OCR on a receipt image."""
     img = Image.open(image_path)
     img = preprocess_image(img)
-    text = pytesseract.image_to_string(img, config='--psm 6')
+    text = pytesseract.image_to_string(
+        img,
+        config=DEFAULT_CONFIG.ocr.tesseract_config,
+    )
     return text
 
 
