@@ -1,252 +1,163 @@
-# 2026 ML Rihal CodeStacker Challenge
+# DocFusion — Intelligent Document Processing Pipeline
 
-## DocFusion: Operation Intelligent Documents
-
-### **Storyline**
-
-Across multiple government and enterprise departments, thousands of documents are processed every day—invoices, receipts, forms, and scanned reports. Most of this information is **locked inside unstructured PDFs and images**, requiring manual extraction, validation, and review. This slows down decision-making, introduces human error, and prevents organizations from reacting quickly to anomalies or suspicious activity.
-
-To solve this, the **DocFusion Initiative** has been launched.
-Your mission is to design an **intelligent, efficient, and production-ready document processing pipeline** that can:
-
-1. **Understand** scanned documents.
-2. **Extract** structured information.
-3. **Detect** unusual or suspicious patterns automatically.
-
-The goal is not only accuracy—but also **speed, reliability, and real-world deployability**.
-
-### **Problem Statement**
-
-You are provided with a unified scope of **scanned business documents** (a combination of SROIE, Find-It-Again, and CORD). Each document may contain:
-
-* **Document identifiers** (invoice number, vendor name, date).
-* **Monetary values** (totals, taxes, subtotals).
-* **Layout variations and OCR noise**.
-
-Your task is to transform these **unstructured documents** into:
-
-1. **Clean structured data**.
-2. **Anomaly detection insights**.
-3. **A deployable ML pipeline suitable for automated evaluation**.
-
-### **Your Challenge:**
-
-You must design an end-to-end system that:
-
-* Processes scanned PDFs/images.
-* Extracts key structured fields accurately.
-* Detects anomalous or suspicious records (using the Find-It-Again labels).
-* Interfaces seamlessly with the **DocFusion Autograder Harness**.
-* Operates efficiently under strict **time and resource constraints**.
-
-### **The Data Foundation (Unified Corpus)**
-
-To simulate a real-world environment with varying layouts, languages, and fraud scenarios, this challenge utilizes a **Unified Intersection** of three key datasets. Participants must treat these sources as a single, messy incoming stream of documents.
-
-#### **Dataset A: SROIE (Scanned Receipts OCR and Information Extraction)**
-
-* **Role:** The baseline for English receipt structure and OCR accuracy.
-* **URL:** [SROIE Dataset on Kaggle](https://www.kaggle.com/datasets/urbikn/sroie-datasetv2)
-
-#### **Dataset B: Find-It-Again (L3i)**
-
-* **Role:** The "Red Team" dataset. It contains genuine SROIE receipts mixed with realistic forgeries (tampered text, copy-paste attacks). This is the ground truth for **Level 3 (Anomaly Detection)**.
-* **URL:** [Find-It-Again Dataset (L3i Laboratory)](https://l3i-share.univ-lr.fr/2023Finditagain/index.html)
-
-#### **Dataset C: CORD (Consolidated Receipt Dataset)**
-
-* **Role:** The "Volume" dataset. Provides thousands of diverse layouts and noise variations to test the **robustness** of the pipeline.
-* **URL:** [CORD Dataset on HuggingFace](https://huggingface.co/datasets/naver-clova-ix/cord-v2)
+**CodeStacker 2026 ML Challenge**  
+**Author:** Abdullah Al Junaibi  
+**Date:** March 10, 2026
 
 ---
 
-### **4. Objectives & Challenge Levels**
+## Overview
 
-#### **Level 1: Document Understanding & EDA**
+An end-to-end document processing pipeline that:
+1. **Extracts** structured fields (vendor, date, total) from scanned receipts via OCR
+2. **Detects** forged/suspicious documents using image analysis + machine learning
+3. **Displays** results in an interactive web dashboard
 
-**Organizations cannot fix what they cannot see.**
-Your first step is to explore and understand the unified dataset.
+## Quick Start
 
-**Tasks:**
+### Prerequisites
+- Python 3.13+
+- Tesseract OCR (`apt install tesseract-ocr`)
 
-* Inspect document images and OCR outputs from all three sources.
-* Clean and preprocess extracted text/data.
-* Analyze common layouts, fields, and value distributions.
-* Visualize dataset statistics (e.g., price distribution, vendor frequency) and potential anomalies.
+### Setup
 
-**Goal:** Build intuition about the data and prepare it for modeling.
+```bash
+# Clone
+git clone https://github.com/abdullah-aljunaibi/codestacker-2026-ml.git
+cd codestacker-2026-ml
 
-#### **Level 2: Structured Information Extraction**
+# Install dependencies
+pip install -r requirements.txt
 
-**Manual data entry must be eliminated.**
-Your task is to **automatically extract structured fields** from documents. Your pipeline must successfully extract the following mandatory fields:
+# Run smoke test
+python check_submission.py --submission .
+```
 
-* `vendor`: The merchant or company name.
-* `date`: The transaction date.
-* `total`: The total amount.
+### Run Web UI
 
-**Requirements:**
+```bash
+streamlit run app.py
+# Open http://localhost:8501
+```
 
-* Handle OCR noise and layout variations from the diverse CORD/SROIE samples.
-* Format the final output to match the harness requirements (JSONL).
+### Docker
 
-**Expected Outcome:** A reliable document-to-data extraction pipeline.
+```bash
+docker build -t docfusion .
+docker run -p 8501:8501 docfusion
+```
 
-#### **Level 3: Anomaly Detection & Basic Web UI**
+---
 
-**Extracted data is only useful if it leads to actionable insight.**
+## Architecture
 
-**Part A: Detect Anomalies**
-Identify suspicious or unusual documents. You must output an `is_forged` prediction (1 for forged, 0 for genuine). Training and extraction can use the unified corpus, while anomaly labels are anchored to the Find-It-Again mapping in the evaluation data. Look for:
+```
+Receipt Image
+     │
+     ▼
+┌─────────────┐    ┌──────────────┐
+│ Tesseract   │───▶│ Regex        │──▶ vendor, date, total
+│ OCR         │    │ Extraction   │
+└─────────────┘    └──────────────┘
+     │
+     ▼
+┌─────────────┐    ┌──────────────┐
+│ Image       │───▶│ Random       │──▶ is_forged (0/1)
+│ Features    │    │ Forest       │
+│ (15 visual  │    │ Classifier   │
+│  + 7 text)  │    └──────────────┘
+└─────────────┘
+```
 
-* Abnormally high totals or statistical outliers.
-* Missing or inconsistent fields (e.g., Total != Sum of parts).
-* **Visual Forgery:** Evidence of copy-paste or digital tampering.
+### Extraction (Level 2)
+- **Tesseract OCR** with preprocessing (grayscale, upscale)
+- **Regex heuristics** for date patterns (ISO, US, European, written)
+- **Total extraction** via keyword matching ("TOTAL", "AMOUNT DUE") + fallback to largest number
+- **Vendor detection** from first meaningful line of OCR text
 
-**Part B: Basic Web UI**
-Develop a simple web-based dashboard (e.g., using Streamlit, Gradio, Django) to display your findings.
+### Anomaly Detection (Level 3)
+- **15 image features**: pixel stats, edge density, noise variance, block variance (copy-paste detection), histogram entropy, dynamic range
+- **7 text features**: text length, line count, digit/alpha/special ratios
+- **Random Forest classifier** trained on labeled data (when real images available)
+- **Heuristic fallback** for blank/synthetic images using amount statistics + base rate
 
-* **Input:** Allow users to upload a receipt image.
-* **Output:** Display the image alongside the extracted fields and the anomaly status.
-* **Visuals:** Highlight the "Suspicious" fields or bounding boxes directly on the document image.
+### Web UI (Level 3B)
+- **Streamlit dashboard** with image upload, field extraction, anomaly scoring
+- Adjustable sensitivity slider, raw OCR view, feature debug panel
+- Sample data browser with ground truth comparison
 
-**Goal:** Combine programmatic output for the autograder with a visual interface for human stakeholders.
+---
 
-#### **Level 4: Harness Integration & Pipeline Efficiency**
+## Project Structure
 
-**The auditing process needs to be automated, seamless, and production-ready.**
-Your pipeline will be rigorously tested by the **DocFusion Autograder Harness**, measuring speed, memory, and effectiveness.
+```
+.
+├── solution.py              # Harness interface (DocFusionSolution class)
+├── app.py                   # Streamlit Web UI
+├── Dockerfile               # Container for model + UI
+├── requirements.txt         # Python dependencies
+├── check_submission.py      # Local smoke test (from challenge)
+├── src/
+│   ├── extractor.py         # OCR + regex field extraction
+│   └── anomaly.py           # Image features + RF anomaly detection
+├── notebooks/
+│   ├── eda.py               # EDA script
+│   ├── eda.ipynb             # Jupyter notebook
+│   ├── eda_dummy_data.png   # Visualization
+│   └── eda_amount_comparison.png
+├── dummy_data/              # Challenge-provided synthetic data
+│   ├── train/
+│   └── test/
+└── data/                    # Real datasets (gitignored)
+```
 
-**Part A: The Interface Contract**
-You must implement a `solution.py` file containing the `DocFusionSolution` class at the project root. This class must handle both training and prediction:
+---
+
+## Harness Interface
 
 ```python
-class DocFusionSolution:
-    def train(self, train_dir: str, work_dir: str) -> str:
-        """
-        Train a model on data in train_dir.
-      
-        Args:
-            train_dir: Path to directory containing train.jsonl and images/
-            work_dir:  Scratch directory for writing model artifacts
-          
-        Returns:
-            Path to the saved model directory (typically inside work_dir)
-        """
-        pass
-  
-    def predict(self, model_dir: str, data_dir: str, out_path: str) -> None:
-        """
-        Run inference and write predictions to out_path.
-      
-        Args:
-            model_dir: Path returned by train()
-            data_dir:  Path to directory containing test.jsonl and images/
-            out_path:  Path where predictions JSONL should be written
-        """
-        pass
+from solution import DocFusionSolution
+
+sol = DocFusionSolution()
+model_dir = sol.train("path/to/train_dir", "path/to/work_dir")
+sol.predict(model_dir, "path/to/test_dir", "predictions.jsonl")
 ```
 
-**Prediction output format (`predictions.jsonl`)**
-
-Each line must be a JSON object, for example:
-
+### Output Format (`predictions.jsonl`)
 ```json
-{"id":"t001","vendor":"ACME Corp","date":"2024-01-01","total":"10.00","is_forged":0}
-{"id":"t002","vendor":null,"date":null,"total":null,"is_forged":1}
+{"id": "t001", "vendor": "ACME Corp", "date": "2024-01-01", "total": "10.00", "is_forged": 0}
+{"id": "t002", "vendor": null, "date": null, "total": null, "is_forged": 1}
 ```
-
-Required fields:
-
-* `id` (string, must match test ID)
-* `is_forged` (integer, `0` or `1`)
-
-Optional fields:
-
-* `vendor` (string or `null`)
-* `date` (string or `null`)
-* `total` (string or `null`)
-
-### **Local Validation Kit**
-
-This repository includes a lightweight local validation kit for participants:
-
-* `sample_submission/solution.py` - Starter template.
-* `dummy_data/` - Small train/test dataset for local checks.
-* `check_submission.py` - Smoke test for interface and output format.
-
-`dummy_data/` is only for local smoke testing and schema validation. Final judge runs use private competition data.
-
-Run local validation:
-
-```bash
-cd ML
-python3 check_submission.py --submission ./sample_submission
-```
-
-If your submission is in another folder:
-
-```bash
-cd ML
-python3 check_submission.py --submission /path/to/your/submission
-```
-
-The checker validates:
-
-* `solution.py` defines `DocFusionSolution`.
-* `train(train_dir, work_dir)` runs and returns a model directory path.
-* `predict(model_dir, data_dir, out_path)` writes `predictions.jsonl`.
-* Every prediction has required fields:
-  * `id` (non-empty string)
-  * `is_forged` (integer `0` or `1`)
-* Optional fields `vendor`, `date`, `total` are string or `null`.
-* Prediction IDs match the IDs in `dummy_data/test/test.jsonl` (no missing/duplicate/unknown IDs).
-
-> Note: This checker does not calculate final scores and does not replace the private judge harness.
-
-**Part B: Performance Optimization**
-The harness will automatically benchmark your code. **Accuracy alone is not enough.** You must optimize:
-
-* **Inference latency** and throughput per document.
-* **Peak memory usage** during both training and prediction.
-* **Model size** (disk and memory footprint).
-
-**Part C: Reproducibility & ML Engineering**
-Show production discipline by including:
-
-* Clear project structure.
-* Strict dependency management (e.g., `uv`, `poetry`, `requirements.txt`, etc.).
-* Deterministic execution to ensure your code runs seamlessly in the judge's environment.
-
-**Goal:** Deliver a robust system that passes automated testing and could realistically run inside an enterprise workflow.
 
 ---
 
-### **5. Bonus Task: Intelligent Automation & Deployment**
+## EDA Key Findings
 
-**Can your system operate in the real world?**
-These are **optional extensions** but will strengthen your submission.
+| Metric | Value |
+|--------|-------|
+| Dummy train | 20 receipts (50% forged) |
+| Fraud types | price_change, text_edit, layout_edit |
+| CORD dataset | 800 train, 100 test (diverse layouts) |
+| Forged vs genuine amounts | Statistically similar (mean ~$252) |
 
-* **Containerization:** Create a **Dockerfile** to containerize your project (Model + UI). Ensure all OCR dependencies and libraries are included. Efficient image/build design is a plus.
-* **Cloud Deployment:** Deploy your application on a VPS or cloud platform. Provide a public demo link and/or deployed endpoint.
-* **Intelligent Assistance:** Use a lightweight LLM to generate **human-readable anomaly summaries** (e.g., *"This receipt appears tampered; the date font does not match the vendor font"*).
+**Implication:** Amount-only detection is insufficient — visual features (noise, edges, block variance) are essential for forgery detection.
 
 ---
 
-### **6. Submission Guidelines**
+## Design Decisions
 
-#### **What to Submit:**
+1. **OCR + regex over vision models**: Faster inference, lower memory — important for harness benchmarks
+2. **Random Forest over deep learning**: Trains quickly on small datasets, interpretable features
+3. **Two-tier anomaly detection**: ML model when image features are available, heuristic fallback for edge cases
+4. **Atomic feature extraction**: Image and text features computed independently, combined for classification
 
-1. **Full Source Code**: The entire codebase, including training scripts, inference code, and UI components.
-2. **`solution.py`**: The file must exist in the root and it must contain the `DocFusionSolution` class exactly as specified in the interface contract.
-3. **Dependencies**: A clear `pyproject.toml` or `requirements.txt` and lockfile. Python 3.13+ is required.
-4. **Jupyter Notebooks**: Documenting your Level 1 EDA, model training logic, and extraction experiments.
-5. **Web UI Code**: Scripts to run your Level 3 dashboard (e.g., `app.py`).
-6. **Documentation**: A comprehensive README explaining your approach, architecture, and instructions for running your UI and Docker containers.
+---
 
-**Final Note:**
-Creativity, clarity, and real-world thinking are strongly encouraged. The strongest solutions will demonstrate **production awareness, efficiency, and thoughtful engineering design**.
+## Technical Stack
 
-We look forward to seeing how you transform raw documents into intelligent decisions.
-
-## **Happy coding - and welcome to CodeStacker 2026.**
+- Python 3.13+
+- Tesseract OCR 5.x
+- scikit-learn (Random Forest)
+- Pillow (image processing)
+- Streamlit (web UI)
+- NumPy, Matplotlib (analysis)
