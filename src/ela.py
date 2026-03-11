@@ -21,17 +21,13 @@ def _empty_ela_features() -> dict[str, float]:
 ELA_FEATURE_KEYS = list(_empty_ela_features().keys())
 
 
-def extract_ela_features(image_path: str, quality: int = 90) -> dict[str, float]:
-    """Compute compact ELA statistics from a document image."""
+def compute_ela_array(image_path: str, quality: int = 90) -> np.ndarray:
+    """Return the grayscale ELA map for localization."""
     try:
         with Image.open(image_path) as source:
             rgb = source.convert("RGB")
     except Exception:
-        return _empty_ela_features()
-
-    width, height = rgb.size
-    if width == 0 or height == 0:
-        return _empty_ela_features()
+        return np.zeros((1, 1), dtype=np.float64)
 
     buffer = BytesIO()
     try:
@@ -40,10 +36,19 @@ def extract_ela_features(image_path: str, quality: int = 90) -> dict[str, float]
         with Image.open(buffer) as recompressed:
             diff = ImageChops.difference(rgb, recompressed.convert("RGB"))
     except Exception:
+        return np.zeros((max(rgb.height, 1), max(rgb.width, 1)), dtype=np.float64)
+
+    return np.asarray(diff.convert("L"), dtype=np.float64)
+
+
+def extract_ela_features(image_path: str, quality: int = 90) -> dict[str, float]:
+    """Compute compact ELA statistics from a document image."""
+    ela = compute_ela_array(image_path, quality=quality)
+    if ela.size == 0:
         return _empty_ela_features()
 
-    ela = np.asarray(diff.convert("L"), dtype=np.float64)
-    if ela.size == 0:
+    height, width = ela.shape[:2]
+    if width == 0 or height == 0:
         return _empty_ela_features()
 
     block_size = max(16, min(width, height) // 10)

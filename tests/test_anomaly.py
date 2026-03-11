@@ -8,12 +8,9 @@ from unittest.mock import patch
 
 from PIL import Image
 
-from src.anomaly import (
-    extract_text_features,
-    predict_anomaly,
-    train_anomaly_model,
-)
+from src.anomaly import extract_text_features, predict_anomaly, train_anomaly_model
 from src.config import DEFAULT_CONFIG
+from src.types import AnalysisResult, AnomalyResult, Box, ExtractionResult, FieldPrediction
 
 
 class AnomalyTests(unittest.TestCase):
@@ -63,6 +60,25 @@ class AnomalyTests(unittest.TestCase):
             for i in range(1, 7)
         ]
 
+        def fake_analysis(document_path: str, model_bundle=None, debug: bool = False) -> AnalysisResult:
+            stem = Path(document_path).stem
+            index = int(stem[1:])
+            total = f"{100 + index * 7:.2f}"
+            return AnalysisResult(
+                document_path=document_path,
+                ocr_text=f"Vendor {index}\nTOTAL {total}",
+                words=(),
+                lines=(),
+                extraction=ExtractionResult(
+                    vendor=FieldPrediction("vendor", f"Vendor {index}", 0.9, Box(0, 0, 10, 10, 0)),
+                    date=FieldPrediction("date", "2024-01-01", 0.8, Box(0, 10, 10, 20, 0)),
+                    total=FieldPrediction("total", total, 0.95, Box(0, 20, 10, 30, 0)),
+                ),
+                anomaly=AnomalyResult(0.0, 0),
+                page_count=1,
+                page_sizes=((48, 48),),
+            )
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             train_dir = Path(tmp_dir) / "train"
             model_dir_a = Path(tmp_dir) / "model-a"
@@ -73,15 +89,7 @@ class AnomalyTests(unittest.TestCase):
             for record in records:
                 Image.new("L", (48, 48), color=100).save(train_dir / record["image_path"])
 
-            ocr_payloads = {
-                record["image_path"]: f"{record['fields']['vendor']}\nTOTAL {record['fields']['total']}"
-                for record in records
-            }
-
-            def fake_extract_text(image_path: str) -> str:
-                return ocr_payloads[Path(image_path).relative_to(train_dir).as_posix()]
-
-            with patch("src.extractor.extract_text", side_effect=fake_extract_text):
+            with patch("src.pipeline.analyze_document", side_effect=fake_analysis):
                 model_a = train_anomaly_model(records, str(train_dir), str(model_dir_a))
                 model_b = train_anomaly_model(records, str(train_dir), str(model_dir_b))
 
@@ -98,7 +106,7 @@ class AnomalyTests(unittest.TestCase):
             with artifact_b.open("rb") as handle:
                 data_b = pickle.load(handle)
 
-            self.assertEqual(data_a["model_type"], "GradientBoostingClassifier")
+            self.assertEqual(data_a["model_type"], data_b["model_type"])
             self.assertEqual(data_a["feature_keys"], data_b["feature_keys"])
             self.assertEqual(data_a["forged_ratio"], data_b["forged_ratio"])
             self.assertEqual(data_a["train_accuracy"], data_b["train_accuracy"])

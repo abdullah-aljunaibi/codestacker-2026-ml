@@ -1,20 +1,21 @@
-"""Anomaly detection for receipt forgery using visual, ELA, and consistency signals."""
+"""Anomaly detection based on visual, OCR, extraction, and consistency features."""
 
 from __future__ import annotations
 
 import os
 import pickle
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 from PIL import Image, ImageFilter
 
 from src.config import DEFAULT_CONFIG
-from src.consistency import (
-    CONSISTENCY_FEATURE_KEYS,
-    extract_consistency_features,
-)
-from src.ela import ELA_FEATURE_KEYS, extract_ela_features
+from src.consistency import CONSISTENCY_FEATURE_KEYS, extract_consistency_features
+from src.ela import ELA_FEATURE_KEYS, compute_ela_array, extract_ela_features
+from src.extractor import parse_amount
 from src.reproducibility import set_deterministic_seeds
+from src.types import AnalysisResult, Box, OCRWord
 
 
 def _empty_base_image_features() -> dict[str, float]:
@@ -38,10 +39,29 @@ def _empty_base_image_features() -> dict[str, float]:
 
 
 BASE_IMAGE_FEATURE_KEYS = list(_empty_base_image_features().keys())
+EXTRA_FEATURE_KEYS = [
+    "ocr_mean_confidence",
+    "ocr_low_conf_ratio",
+    "line_count",
+    "word_count",
+    "vendor_confidence",
+    "date_confidence",
+    "total_confidence",
+    "field_presence",
+]
+FEATURE_KEYS = BASE_IMAGE_FEATURE_KEYS + ELA_FEATURE_KEYS
+TEXT_FEATURE_KEYS = [
+    "text_length",
+    "line_count",
+    "digit_ratio",
+    "alpha_ratio",
+    "special_ratio",
+    "avg_line_length",
+    "empty_line_ratio",
+]
 
 
 def _extract_base_image_features(image_path: str) -> dict[str, float]:
-    """Extract visual statistics from a receipt image."""
     try:
         with Image.open(image_path) as source:
             gray = source.convert("L")
@@ -53,7 +73,7 @@ def _extract_base_image_features(image_path: str) -> dict[str, float]:
         return _empty_base_image_features()
 
     pixels = np.asarray(gray, dtype=np.float64)
-    if pixels.size == 0 or pixels.std() < 1.0:
+    if pixels.size == 0:
         return _empty_base_image_features()
 
     edge_pixels = np.asarray(gray.filter(ImageFilter.FIND_EDGES), dtype=np.float64)
@@ -61,6 +81,8 @@ def _extract_base_image_features(image_path: str) -> dict[str, float]:
     noise = pixels - blur_pixels
 
     hist, _ = np.histogram(pixels.flatten(), bins=64, range=(0, 256))
+    if hist.sum() == 0:
+        return _empty_base_image_features()
     hist_norm = hist / hist.sum()
     hist_norm = hist_norm[hist_norm > 0]
 
@@ -74,7 +96,6 @@ def _extract_base_image_features(image_path: str) -> dict[str, float]:
 
     p5 = float(np.percentile(pixels, 5))
     p95 = float(np.percentile(pixels, 95))
-
     return {
         "img_mean": float(pixels.mean()),
         "img_std": float(pixels.std()),
@@ -95,17 +116,12 @@ def _extract_base_image_features(image_path: str) -> dict[str, float]:
 
 
 def extract_image_features(image_path: str) -> dict[str, float]:
-    """Return the full visual feature set, including ELA signals."""
     features = _extract_base_image_features(image_path)
     features.update(extract_ela_features(image_path))
     return features
 
 
-FEATURE_KEYS = BASE_IMAGE_FEATURE_KEYS + ELA_FEATURE_KEYS
-
-
 def extract_text_features(ocr_text: str) -> dict[str, float]:
-    """Extract text-based features for anomaly detection."""
     if not ocr_text or not ocr_text.strip():
         return {
             "text_length": 0.0,
@@ -120,11 +136,9 @@ def extract_text_features(ocr_text: str) -> dict[str, float]:
     lines = ocr_text.splitlines()
     non_empty = [line for line in lines if line.strip()]
     total_chars = len(ocr_text)
-
     digits = sum(char.isdigit() for char in ocr_text)
     alpha = sum(char.isalpha() for char in ocr_text)
     special = total_chars - digits - alpha - ocr_text.count(" ") - ocr_text.count("\n")
-
     return {
         "text_length": float(total_chars),
         "line_count": float(len(non_empty)),
@@ -136,221 +150,272 @@ def extract_text_features(ocr_text: str) -> dict[str, float]:
     }
 
 
-TEXT_FEATURE_KEYS = list(extract_text_features("").keys())
-
-
-def _vectorize(features: dict[str, float], keys: list[str]) -> list[float]:
-    return [float(features.get(key, 0.0)) for key in keys]
-
-
 def features_to_vector(features: dict[str, float]) -> list[float]:
-    return _vectorize(features, FEATURE_KEYS)
+    return [float(features.get(key, 0.0)) for key in FEATURE_KEYS]
 
 
 def text_features_to_vector(features: dict[str, float]) -> list[float]:
-    return _vectorize(features, TEXT_FEATURE_KEYS)
+    return [float(features.get(key, 0.0)) for key in TEXT_FEATURE_KEYS]
 
 
-def _compute_sample_weights(labels: np.ndarray) -> np.ndarray:
-    class_counts = np.bincount(labels.astype(int), minlength=2)
-    weights = np.ones_like(labels, dtype=np.float64)
-    for label, count in enumerate(class_counts):
-        if count:
-            weights[labels == label] = len(labels) / (len(class_counts) * count)
-    return weights
+def extra_features_to_vector(features: dict[str, float]) -> list[float]:
+    return [float(features.get(key, 0.0)) for key in EXTRA_FEATURE_KEYS]
 
 
-def _build_feature_vector(
+def build_feature_vector(
+    analysis: AnalysisResult,
+    stats: dict[str, Any] | None,
+) -> tuple[dict[str, float], list[float]]:
+    amount = parse_amount(analysis.extraction.total.value) or 0.0
+    image_features = extract_image_features(analysis.document_path)
+    text_features = extract_text_features(analysis.ocr_text)
+    consistency_features = extract_consistency_features(
+        analysis.ocr_text,
+        amount,
+        stats,
+        vendor=analysis.extraction.vendor.value,
+    )
+    confidences = [
+        word.confidence / 100.0
+        for word in analysis.words
+        if word.confidence is not None and word.confidence >= 0
+    ]
+    extra_features = {
+        "ocr_mean_confidence": float(np.mean(confidences)) if confidences else 0.0,
+        "ocr_low_conf_ratio": float(np.mean([value < 0.5 for value in confidences])) if confidences else 0.0,
+        "line_count": float(len(analysis.lines)),
+        "word_count": float(len(analysis.words)),
+        "vendor_confidence": analysis.extraction.vendor.confidence,
+        "date_confidence": analysis.extraction.date.confidence,
+        "total_confidence": analysis.extraction.total.confidence,
+        "field_presence": float(
+            sum(
+                field.value is not None
+                for field in (
+                    analysis.extraction.vendor,
+                    analysis.extraction.date,
+                    analysis.extraction.total,
+                )
+            )
+            / 3.0
+        ),
+    }
+
+    all_features = {}
+    all_features.update(image_features)
+    all_features.update(text_features)
+    all_features.update(consistency_features)
+    all_features.update(extra_features)
+    vector = (
+        features_to_vector(image_features)
+        + text_features_to_vector(text_features)
+        + [float(consistency_features.get(key, 0.0)) for key in CONSISTENCY_FEATURE_KEYS]
+        + extra_features_to_vector(extra_features)
+        + [float(amount)]
+    )
+    return all_features, vector
+
+
+def localize_suspicious_regions(
+    image_path: str,
+    words: tuple[OCRWord, ...],
+    max_regions: int = 6,
+) -> tuple[Box, ...]:
+    regions: list[Box] = []
+    ela = compute_ela_array(image_path)
+    if ela.size:
+        height, width = ela.shape[:2]
+        block = max(24, min(height, width) // 10)
+        block_scores: list[tuple[float, Box]] = []
+        for top in range(0, height, block):
+            for left in range(0, width, block):
+                patch = ela[top : top + block, left : left + block]
+                if patch.size == 0:
+                    continue
+                score = float(np.mean(patch))
+                if score >= 18.0:
+                    block_scores.append(
+                        (
+                            score,
+                            Box(
+                                left=left,
+                                top=top,
+                                right=min(left + block, width),
+                                bottom=min(top + block, height),
+                                page_index=0,
+                            ),
+                        )
+                    )
+        block_scores.sort(key=lambda item: item[0], reverse=True)
+        regions.extend(box for _, box in block_scores[: max_regions // 2])
+
+    low_conf_words = [
+        word
+        for word in words
+        if word.confidence is not None and 0 <= word.confidence < 45
+    ]
+    low_conf_words.sort(key=lambda word: word.confidence or 0.0)
+    for word in low_conf_words[: max_regions - len(regions)]:
+        regions.append(word.box)
+
+    deduped: list[Box] = []
+    seen = set()
+    for region in regions:
+        key = (region.left, region.top, region.right, region.bottom, region.page_index)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(region)
+    return tuple(deduped[:max_regions])
+
+
+def heuristic_score(feature_values: dict[str, float]) -> tuple[float, tuple[str, ...]]:
+    reasons: list[str] = []
+    score = 0.0
+    if feature_values.get("ela_high_ratio", 0.0) > 0.12:
+        score += 0.25
+        reasons.append("Elevated ELA artifact ratio")
+    if feature_values.get("noise_std", 0.0) > 20.0:
+        score += 0.15
+        reasons.append("High residual noise")
+    if feature_values.get("consistency_risk", 0.0) > 0.5:
+        score += 0.25
+        reasons.append("Field consistency risk is high")
+    if feature_values.get("ocr_low_conf_ratio", 0.0) > 0.35:
+        score += 0.15
+        reasons.append("Large share of low-confidence OCR tokens")
+    if feature_values.get("total_confidence", 0.0) < 0.35:
+        score += 0.1
+        reasons.append("Weak total extraction confidence")
+    if feature_values.get("field_presence", 0.0) < 0.67:
+        score += 0.1
+        reasons.append("Missing key fields")
+    return float(min(score, 1.0)), tuple(reasons)
+
+
+def predict_anomaly(
+    model_data: dict[str, Any] | None,
     img_path: str,
     ocr_text: str,
     amount: float,
-    stats: dict | None,
-) -> tuple[dict[str, float], dict[str, float], dict[str, float], list[float]]:
-    img_features = extract_image_features(img_path)
+    stats: dict[str, Any] | None,
+) -> int:
+    image_features = extract_image_features(img_path)
     text_features = extract_text_features(ocr_text)
     consistency_features = extract_consistency_features(ocr_text, amount, stats)
-    vector = (
-        features_to_vector(img_features)
-        + text_features_to_vector(text_features)
-        + _vectorize(consistency_features, CONSISTENCY_FEATURE_KEYS)
-        + [float(amount)]
+    feature_values = {}
+    feature_values.update(image_features)
+    feature_values.update(text_features)
+    feature_values.update(consistency_features)
+    feature_values.update(
+        {
+            "ocr_low_conf_ratio": 0.0,
+            "total_confidence": 1.0 if amount > 0 else 0.0,
+            "field_presence": 1.0 if amount > 0 else 0.0,
+        }
     )
-    return img_features, text_features, consistency_features, vector
+    vector = (
+        features_to_vector(image_features)
+        + text_features_to_vector(text_features)
+        + [float(consistency_features.get(key, 0.0)) for key in CONSISTENCY_FEATURE_KEYS]
+        + [0.0, 0.0, text_features["line_count"], 0.0, 0.0, 0.0, 1.0 if amount > 0 else 0.0, 1.0 if amount > 0 else 0.0]
+        + [amount]
+    )
+    if model_data and model_data.get("model") is not None:
+        probability = float(model_data["model"].predict_proba(np.asarray([vector], dtype=np.float64))[0][1])
+        return int(probability >= float(model_data.get("threshold", DEFAULT_CONFIG.training.anomaly_threshold)))
+    score, _ = heuristic_score(feature_values)
+    return int(score >= DEFAULT_CONFIG.training.anomaly_threshold)
 
 
-def train_anomaly_model(records: list, train_dir: str, model_dir: str):
-    """Train a gradient boosting classifier on visual, text, and consistency features."""
+def train_anomaly_model(records: list[dict[str, Any]], train_dir: str, model_dir: str) -> dict[str, Any]:
     from sklearn.ensemble import GradientBoostingClassifier
+    from sklearn.metrics import accuracy_score
+    from sklearn.model_selection import StratifiedKFold
 
-    from src.extractor import extract_text
+    from src.pipeline import analyze_document
 
     set_deterministic_seeds(DEFAULT_CONFIG.training.random_state)
     os.makedirs(model_dir, exist_ok=True)
 
+    analyses: list[tuple[AnalysisResult, int]] = []
+    predicted_vendors: set[str] = set()
+    predicted_amounts: list[float] = []
+
+    for record in records:
+        image_path = Path(train_dir) / str(record.get("image_path", ""))
+        analysis = analyze_document(str(image_path), model_bundle=None, debug=False)
+        label = int(record.get("label", {}).get("is_forged", 0))
+        analyses.append((analysis, label))
+        if analysis.extraction.vendor.value:
+            predicted_vendors.add(analysis.extraction.vendor.value)
+        amount = parse_amount(analysis.extraction.total.value)
+        if amount is not None:
+            predicted_amounts.append(amount)
+
     stats = {
-        "vendors": sorted(
-            {
-                record.get("fields", {}).get("vendor", "").strip()
-                for record in records
-                if record.get("fields", {}).get("vendor")
-            }
-        )
+        "vendors": sorted(predicted_vendors),
+        "amount_mean": float(np.mean(predicted_amounts)) if predicted_amounts else 0.0,
+        "amount_std": float(np.std(predicted_amounts)) if predicted_amounts else 0.0,
+        "amount_q1": float(np.percentile(predicted_amounts, 25)) if predicted_amounts else 0.0,
+        "amount_q3": float(np.percentile(predicted_amounts, 75)) if predicted_amounts else 0.0,
     }
 
-    amounts = []
-    for record in records:
-        total = record.get("fields", {}).get("total")
-        if total is None:
-            continue
-        try:
-            amounts.append(float(total))
-        except (TypeError, ValueError):
-            continue
-    if amounts:
-        stats.update(
-            {
-                "amount_mean": float(np.mean(amounts)),
-                "amount_std": float(np.std(amounts)),
-                "amount_q1": float(np.percentile(amounts, 25)),
-                "amount_q3": float(np.percentile(amounts, 75)),
-            }
-        )
+    X_rows: list[list[float]] = []
+    y_rows: list[int] = []
+    for analysis, label in analyses:
+        _, vector = build_feature_vector(analysis, stats)
+        X_rows.append(vector)
+        y_rows.append(label)
 
-    features: list[list[float]] = []
-    labels: list[int] = []
-
-    for record in records:
-        img_path = os.path.join(train_dir, record["image_path"])
-        try:
-            ocr_text = extract_text(img_path) if os.path.exists(img_path) else ""
-        except Exception:
-            ocr_text = ""
-
-        try:
-            amount = float(record.get("fields", {}).get("total") or 0.0)
-        except (TypeError, ValueError):
-            amount = 0.0
-
-        _, _, _, vector = _build_feature_vector(img_path, ocr_text, amount, stats)
-        features.append(vector)
-        labels.append(int(record.get("label", {}).get("is_forged", 0)))
-
-    X = np.asarray(features, dtype=np.float64)
-    y = np.asarray(labels, dtype=np.int64)
+    X = np.asarray(X_rows, dtype=np.float64) if X_rows else np.zeros((0, 0), dtype=np.float64)
+    y = np.asarray(y_rows, dtype=np.int64)
 
     model = None
+    validation_accuracy = None
     train_accuracy = None
-    if len(X) >= 6 and len(set(y.tolist())) >= 2:
-        feature_variance = X.std(axis=0)
-        useful_features = feature_variance > 1e-6
-        if useful_features.sum() >= 3:
-            model = GradientBoostingClassifier(
-                n_estimators=DEFAULT_CONFIG.training.gradient_boosting_estimators,
-                learning_rate=DEFAULT_CONFIG.training.gradient_boosting_learning_rate,
-                max_depth=DEFAULT_CONFIG.training.gradient_boosting_max_depth,
-                min_samples_leaf=DEFAULT_CONFIG.training.gradient_boosting_min_samples_leaf,
+    if len(X_rows) >= 6 and len(set(y_rows)) >= 2:
+        model = GradientBoostingClassifier(
+            n_estimators=DEFAULT_CONFIG.training.gradient_boosting_estimators,
+            learning_rate=DEFAULT_CONFIG.training.gradient_boosting_learning_rate,
+            max_depth=DEFAULT_CONFIG.training.gradient_boosting_max_depth,
+            min_samples_leaf=DEFAULT_CONFIG.training.gradient_boosting_min_samples_leaf,
+            random_state=DEFAULT_CONFIG.training.random_state,
+        )
+        n_splits = min(5, len(y_rows) // 2)
+        if n_splits >= 2:
+            cv = StratifiedKFold(
+                n_splits=n_splits,
+                shuffle=True,
                 random_state=DEFAULT_CONFIG.training.random_state,
             )
-            sample_weight = _compute_sample_weights(y)
-            model.fit(X, y, sample_weight=sample_weight)
-            train_accuracy = float(model.score(X, y))
-            print(
-                f"[anomaly] GradientBoosting trained: {len(X)} samples, "
-                f"train acc={train_accuracy:.2f}"
-            )
-        else:
-            print("[anomaly] Features have insufficient variance; using heuristic fallback")
-    else:
-        print("[anomaly] Not enough labeled data; using heuristic fallback")
+            fold_scores = []
+            for train_index, test_index in cv.split(X, y):
+                fold_model = GradientBoostingClassifier(
+                    n_estimators=DEFAULT_CONFIG.training.gradient_boosting_estimators,
+                    learning_rate=DEFAULT_CONFIG.training.gradient_boosting_learning_rate,
+                    max_depth=DEFAULT_CONFIG.training.gradient_boosting_max_depth,
+                    min_samples_leaf=DEFAULT_CONFIG.training.gradient_boosting_min_samples_leaf,
+                    random_state=DEFAULT_CONFIG.training.random_state,
+                )
+                fold_model.fit(X[train_index], y[train_index])
+                predictions = fold_model.predict(X[test_index])
+                fold_scores.append(float(accuracy_score(y[test_index], predictions)))
+            validation_accuracy = float(np.mean(fold_scores)) if fold_scores else None
+        model.fit(X, y)
+        train_accuracy = float(accuracy_score(y, model.predict(X)))
 
-    forged_ratio = float(y.mean()) if len(y) else 0.5
-    model_path = os.path.join(model_dir, DEFAULT_CONFIG.data.anomaly_model_file_name)
-    with open(model_path, "wb") as handle:
-        pickle.dump(
-            {
-                "model": model,
-                "model_type": "GradientBoostingClassifier" if model is not None else "heuristic",
-                "feature_keys": FEATURE_KEYS
-                + TEXT_FEATURE_KEYS
-                + CONSISTENCY_FEATURE_KEYS
-                + ["amount"],
-                "forged_ratio": forged_ratio,
-                "train_accuracy": train_accuracy,
-            },
-            handle,
-        )
+    artifact = {
+        "model": model,
+        "model_type": type(model).__name__ if model is not None else "heuristic",
+        "feature_keys": FEATURE_KEYS + TEXT_FEATURE_KEYS + CONSISTENCY_FEATURE_KEYS + EXTRA_FEATURE_KEYS + ["amount"],
+        "forged_ratio": float(np.mean(y)) if len(y) else 0.0,
+        "train_accuracy": train_accuracy,
+        "validation_accuracy": validation_accuracy,
+        "threshold": DEFAULT_CONFIG.training.anomaly_threshold,
+        "stats": stats,
+    }
 
-    return model
-
-
-def predict_anomaly(
-    model_data: dict,
-    img_path: str,
-    ocr_text: str,
-    amount: float,
-    stats: dict,
-) -> int:
-    """Predict whether a document is forged."""
-    img_features, text_features, consistency_features, vector = _build_feature_vector(
-        img_path,
-        ocr_text,
-        amount,
-        stats,
-    )
-    model = model_data.get("model")
-
-    if model is not None:
-        proba = model.predict_proba(np.asarray([vector], dtype=np.float64))[0]
-        forged_prob = float(proba[1]) if len(proba) > 1 else 0.0
-        return int(forged_prob >= DEFAULT_CONFIG.training.anomaly_threshold)
-
-    forged_ratio = float(model_data.get("forged_ratio", 0.5))
-    return _heuristic_forgery(
-        amount=amount,
-        stats=stats,
-        img_features=img_features,
-        text_features=text_features,
-        consistency_features=consistency_features,
-        forged_ratio=forged_ratio,
-    )
-
-
-def _heuristic_forgery(
-    amount: float,
-    stats: dict,
-    img_features: dict[str, float],
-    text_features: dict[str, float],
-    consistency_features: dict[str, float],
-    forged_ratio: float = 0.5,
-) -> int:
-    """Rule-based forgery detection when the ML model is unavailable."""
-    score = 0.0
-
-    if img_features.get("img_std", 0.0) > 1.0:
-        if img_features.get("noise_std", 0.0) > 20.0:
-            score += 0.2
-        if img_features.get("ela_high_ratio", 0.0) > 0.12:
-            score += 0.25
-        if img_features.get("ela_block_std", 0.0) > 8.0:
-            score += 0.15
-        block_var_mean = max(img_features.get("block_var_mean", 0.0), 1.0)
-        if img_features.get("block_var_std", 0.0) / block_var_mean < 0.3:
-            score += 0.15
-        entropy = img_features.get("entropy", 0.0)
-        if entropy and (entropy < 3.0 or entropy > 7.0):
-            score += 0.1
-
-    if text_features.get("text_length", 0.0) == 0:
-        score += 0.1
-
-    score += 0.35 * consistency_features.get("consistency_risk", 0.0)
-
-    amount_std = float(stats.get("amount_std", 0.0) or 0.0)
-    amount_mean = float(stats.get("amount_mean", 0.0) or 0.0)
-    if amount > 0 and amount_std > 1e-6:
-        z_score = abs(amount - amount_mean) / amount_std
-        if z_score > 2.0:
-            score += 0.2
-
-    threshold = max(0.45, min(0.7, 0.4 + forged_ratio * 0.2))
-    return int(score >= threshold)
+    with (Path(model_dir) / DEFAULT_CONFIG.data.anomaly_model_file_name).open("wb") as handle:
+        pickle.dump(artifact, handle)
+    return artifact

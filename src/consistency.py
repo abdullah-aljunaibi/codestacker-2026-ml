@@ -7,7 +7,7 @@ import re
 import numpy as np
 
 
-_AMOUNT_PATTERN = re.compile(r"\d+(?:[.,]\d{2})?")
+_AMOUNT_PATTERN = re.compile(r"\d[\d.,]*")
 
 
 def _empty_consistency_features() -> dict[str, float]:
@@ -44,6 +44,7 @@ def extract_consistency_features(
     ocr_text: str,
     amount: float,
     stats: dict | None,
+    vendor: str | None = None,
 ) -> dict[str, float]:
     """Build lightweight consistency features for anomaly detection."""
     features = _empty_consistency_features()
@@ -87,7 +88,9 @@ def extract_consistency_features(
             features["amount_iqr_gap"] = (amount - q3) / iqr
 
     vendors = [str(v).strip().lower() for v in stats.get("vendors", []) if str(v).strip()]
-    if lower_text and any(vendor in lower_text for vendor in vendors):
+    if lower_text and any(candidate in lower_text for candidate in vendors):
+        features["known_vendor_hit"] = 1.0
+    elif vendor and vendor.strip().lower() in vendors:
         features["known_vendor_hit"] = 1.0
 
     if lines:
