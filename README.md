@@ -1,163 +1,170 @@
-# DocFusion — Intelligent Document Processing Pipeline
+# DocFusion
 
-**CodeStacker 2026 ML Challenge**  
-**Author:** Abdullah Al Junaibi  
-**Date:** March 10, 2026
+DocFusion is a receipt-processing submission for the CodeStacker 2026 ML challenge. It extracts structured fields from scanned receipts, scores likely tampering, and exposes both the harness entrypoint and a Streamlit inspection UI from the same codebase.
 
----
+## What It Does
 
-## Overview
+- OCRs receipt images with Tesseract.
+- Extracts `vendor`, `date`, and `total` using layout-aware and regex heuristics.
+- Detects suspicious receipts with visual, ELA, text, and consistency features.
+- Packages the workflow behind `DocFusionSolution` for local challenge validation.
 
-An end-to-end document processing pipeline that:
-1. **Extracts** structured fields (vendor, date, total) from scanned receipts via OCR
-2. **Detects** forged/suspicious documents using image analysis + machine learning
-3. **Displays** results in an interactive web dashboard
+## Repository Layout
 
-## Quick Start
-
-### Prerequisites
-- Python 3.13+
-- Tesseract OCR (`apt install tesseract-ocr`)
-
-### Setup
-
-```bash
-# Clone
-git clone https://github.com/abdullah-aljunaibi/codestacker-2026-ml.git
-cd codestacker-2026-ml
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run smoke test
-python check_submission.py --submission .
+```text
+.
+├── app.py
+├── check_submission.py
+├── Dockerfile
+├── requirements.txt
+├── solution.py
+├── dummy_data/
+├── notebooks/
+├── scripts/
+├── tests/
+└── src/
+    ├── anomaly.py
+    ├── config.py
+    ├── consistency.py
+    ├── ela.py
+    ├── extractor.py
+    ├── ocr.py
+    ├── preprocessing.py
+    ├── reproducibility.py
+    ├── summary.py
+    └── data/
 ```
-
-### Run Web UI
-
-```bash
-streamlit run app.py
-# Open http://localhost:8501
-```
-
-### Docker
-
-```bash
-docker build -t docfusion .
-docker run -p 8501:8501 docfusion
-```
-
----
 
 ## Architecture
 
-```
-Receipt Image
-     │
-     ▼
-┌─────────────┐    ┌──────────────┐
-│ Tesseract   │───▶│ Regex        │──▶ vendor, date, total
-│ OCR         │    │ Extraction   │
-└─────────────┘    └──────────────┘
-     │
-     ▼
-┌─────────────┐    ┌──────────────┐
-│ Image       │───▶│ Random       │──▶ is_forged (0/1)
-│ Features    │    │ Forest       │
-│ (15 visual  │    │ Classifier   │
-│  + 7 text)  │    └──────────────┘
-└─────────────┘
-```
+```text
+Receipt image
+    |
+    +--> src/preprocessing.py
+    |       image cleanup + minimum width normalization
+    |
+    +--> src/ocr.py
+    |       Tesseract OCR -> text + word boxes + confidences
+    |
+    +--> src/extractor.py
+    |       vendor/date/total extraction
+    |
+    +--> src/anomaly.py
+            base image statistics
+            + ELA features from src/ela.py
+            + text features
+            + amount/vendor consistency signals from src/consistency.py
+            -> GradientBoostingClassifier or heuristic fallback
 
-### Extraction (Level 2)
-- **Tesseract OCR** with preprocessing (grayscale, upscale)
-- **Regex heuristics** for date patterns (ISO, US, European, written)
-- **Total extraction** via keyword matching ("TOTAL", "AMOUNT DUE") + fallback to largest number
-- **Vendor detection** from first meaningful line of OCR text
+solution.py
+    train()  -> builds stats.json + anomaly_model.pkl
+    predict() -> emits predictions.jsonl
 
-### Anomaly Detection (Level 3)
-- **15 image features**: pixel stats, edge density, noise variance, block variance (copy-paste detection), histogram entropy, dynamic range
-- **7 text features**: text length, line count, digit/alpha/special ratios
-- **Random Forest classifier** trained on labeled data (when real images available)
-- **Heuristic fallback** for blank/synthetic images using amount statistics + base rate
-
-### Web UI (Level 3B)
-- **Streamlit dashboard** with image upload, field extraction, anomaly scoring
-- Adjustable sensitivity slider, raw OCR view, feature debug panel
-- Sample data browser with ground truth comparison
-
----
-
-## Project Structure
-
-```
-.
-├── solution.py              # Harness interface (DocFusionSolution class)
-├── app.py                   # Streamlit Web UI
-├── Dockerfile               # Container for model + UI
-├── requirements.txt         # Python dependencies
-├── check_submission.py      # Local smoke test (from challenge)
-├── src/
-│   ├── extractor.py         # OCR + regex field extraction
-│   └── anomaly.py           # Image features + RF anomaly detection
-├── notebooks/
-│   ├── eda.py               # EDA script
-│   ├── eda.ipynb             # Jupyter notebook
-│   ├── eda_dummy_data.png   # Visualization
-│   └── eda_amount_comparison.png
-├── dummy_data/              # Challenge-provided synthetic data
-│   ├── train/
-│   └── test/
-└── data/                    # Real datasets (gitignored)
+app.py
+    Streamlit UI for OCR review, feature inspection, and anomaly overlays
 ```
 
----
+## Core Components
 
-## Harness Interface
+### Extraction pipeline
+
+- `src/ocr.py` returns structured OCR output, including word-level bounding boxes.
+- `src/extractor.py` normalizes dates, amounts, and vendor names from OCR text.
+- `src/extractors/vendor.py` uses OCR layout context to improve vendor selection.
+
+### Anomaly pipeline
+
+- `src/anomaly.py` computes grayscale image statistics, text ratios, and model-ready vectors.
+- `src/ela.py` adds JPEG recompression signals for edit detection.
+- `src/consistency.py` measures amount plausibility and vendor/text consistency against training-set stats.
+- `solution.py` uses the trained classifier when available and falls back to deterministic heuristics otherwise.
+
+### Summary helpers
+
+- `src/summary.py` formats extraction and anomaly outputs into compact summaries for templates, logs, or UI surfaces.
+
+## Local Setup
+
+### Prerequisites
+
+- Python 3.13+
+- Tesseract OCR installed on the host
+
+Ubuntu/Debian:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y tesseract-ocr
+```
+
+### Install
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+## Usage
+
+### Run the challenge smoke check
+
+```bash
+python check_submission.py --submission .
+```
+
+### Run the Streamlit UI
+
+```bash
+streamlit run app.py
+```
+
+### Use the harness entrypoint directly
 
 ```python
 from solution import DocFusionSolution
 
-sol = DocFusionSolution()
-model_dir = sol.train("path/to/train_dir", "path/to/work_dir")
-sol.predict(model_dir, "path/to/test_dir", "predictions.jsonl")
+solution = DocFusionSolution()
+model_dir = solution.train("dummy_data/train", "tmp_work")
+solution.predict(model_dir, "dummy_data/test", "tmp_work/predictions.jsonl")
 ```
 
-### Output Format (`predictions.jsonl`)
+## Docker
+
+Build:
+
+```bash
+docker build -t docfusion .
+```
+
+Run:
+
+```bash
+docker run --rm -p 8501:8501 docfusion
+```
+
+The container starts Streamlit on `0.0.0.0:8501`.
+
+## Outputs
+
+`predict()` writes JSONL rows like:
+
 ```json
-{"id": "t001", "vendor": "ACME Corp", "date": "2024-01-01", "total": "10.00", "is_forged": 0}
-{"id": "t002", "vendor": null, "date": null, "total": null, "is_forged": 1}
+{"id":"t001","vendor":"ACME Corp","date":"2024-01-01","total":"10.00","is_forged":0}
 ```
 
----
+Training artifacts are written under the chosen work directory:
 
-## EDA Key Findings
+- `stats.json`
+- `anomaly_model.pkl`
 
-| Metric | Value |
-|--------|-------|
-| Dummy train | 20 receipts (50% forged) |
-| Fraud types | price_change, text_edit, layout_edit |
-| CORD dataset | 800 train, 100 test (diverse layouts) |
-| Forged vs genuine amounts | Statistically similar (mean ~$252) |
+## Validation
 
-**Implication:** Amount-only detection is insufficient — visual features (noise, edges, block variance) are essential for forgery detection.
+Common checks during development:
 
----
-
-## Design Decisions
-
-1. **OCR + regex over vision models**: Faster inference, lower memory — important for harness benchmarks
-2. **Random Forest over deep learning**: Trains quickly on small datasets, interpretable features
-3. **Two-tier anomaly detection**: ML model when image features are available, heuristic fallback for edge cases
-4. **Atomic feature extraction**: Image and text features computed independently, combined for classification
-
----
-
-## Technical Stack
-
-- Python 3.13+
-- Tesseract OCR 5.x
-- scikit-learn (Random Forest)
-- Pillow (image processing)
-- Streamlit (web UI)
-- NumPy, Matplotlib (analysis)
+```bash
+python -m unittest discover -s tests
+python check_submission.py --submission .
+python -m compileall src solution.py app.py
+```
