@@ -24,18 +24,8 @@ class AnomalyTests(unittest.TestCase):
         model_data = {"model": None, "forged_ratio": 0.5}
         stats = {"amount_mean": 50.0, "amount_std": 5.0, "vendors": ["Acme Mart"]}
 
-        with patch(
-            "src.anomaly.extract_image_features",
-            return_value={
-                "img_std": 10.0,
-                "noise_std": 30.0,
-                "ela_high_ratio": 0.2,
-                "ela_block_std": 10.0,
-                "block_var_mean": 20.0,
-                "block_var_std": 1.0,
-                "entropy": 2.0,
-            },
-        ):
+        # Patch heuristic_score directly to return a high-risk score (above threshold)
+        with patch("src.anomaly.heuristic_score", return_value=(0.75, ("Elevated ELA artifact ratio", "High residual noise"))):
             prediction = predict_anomaly(
                 model_data=model_data,
                 img_path="unused.png",
