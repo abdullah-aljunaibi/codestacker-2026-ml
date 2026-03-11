@@ -30,9 +30,9 @@ DATE_PATTERNS = [
 # Total amount patterns
 TOTAL_PATTERNS = [
     # "TOTAL" followed by amount
-    r'(?:TOTAL|Total|GRAND\s*TOTAL|Grand\s*Total|AMOUNT\s*DUE|Amount\s*Due|NET\s*TOTAL)\s*[:\s]*[\$RM]?\s*(\d+[,.]?\d*\.?\d{0,2})',
+    r'\b(?:TOTAL|Grand\s*Total|GRAND\s*TOTAL|Amount\s*Due|AMOUNT\s*DUE|NET\s*TOTAL)\b\s*[:\s]*[\$RM]?\s*(\d+[,.]?\d*\.?\d{0,2})',
     # Amount after "TOTAL" on same or next line
-    r'(?:TOTAL|Total)\s*[\$RM]?\s*(\d{1,}[,.]\d{2,})',
+    r'\b(?:TOTAL|Total)\b\s*[\$RM]?\s*(\d{1,}[,.]\d{2,})',
     # Dollar sign followed by amount
     r'\$\s*(\d+[,.]?\d*\.\d{2})',
     # "RM" (Malaysian Ringgit) amount

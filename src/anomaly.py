@@ -14,6 +14,7 @@ from src.consistency import (
     extract_consistency_features,
 )
 from src.ela import ELA_FEATURE_KEYS, extract_ela_features
+from src.reproducibility import set_deterministic_seeds
 
 
 def _empty_base_image_features() -> dict[str, float]:
@@ -183,6 +184,7 @@ def train_anomaly_model(records: list, train_dir: str, model_dir: str):
 
     from src.extractor import extract_text
 
+    set_deterministic_seeds(DEFAULT_CONFIG.training.random_state)
     os.makedirs(model_dir, exist_ok=True)
 
     stats = {

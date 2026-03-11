@@ -28,30 +28,7 @@ from src.config import DEFAULT_CONFIG
 from src.consistency import CONSISTENCY_FEATURE_KEYS, extract_consistency_features
 from src.data.schema import PredictionRecord
 from src.extractor import extract_fields
-
-
-def _set_deterministic_seeds(seed: int) -> None:
-    os.environ.setdefault("PYTHONHASHSEED", str(seed))
-    random.seed(seed)
-    np.random.seed(seed)
-
-    try:
-        import torch
-    except Exception:
-        return
-
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-    try:
-        torch.use_deterministic_algorithms(True)
-    except Exception:
-        pass
-    try:
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-    except Exception:
-        pass
+from src.reproducibility import set_deterministic_seeds
 
 
 class DocFusionSolution:
@@ -60,7 +37,7 @@ class DocFusionSolution:
     _BATCH_SIZE = 8
 
     def train(self, train_dir: str, work_dir: str) -> str:
-        _set_deterministic_seeds(DEFAULT_CONFIG.training.random_state)
+        set_deterministic_seeds(DEFAULT_CONFIG.training.random_state)
 
         train_path = Path(train_dir)
         model_dir = Path(work_dir) / "model"
@@ -94,7 +71,7 @@ class DocFusionSolution:
         return str(model_dir)
 
     def predict(self, model_dir: str, data_dir: str, out_path: str) -> None:
-        _set_deterministic_seeds(DEFAULT_CONFIG.training.random_state)
+        set_deterministic_seeds(DEFAULT_CONFIG.training.random_state)
 
         model_path = Path(model_dir)
         data_path = Path(data_dir)
