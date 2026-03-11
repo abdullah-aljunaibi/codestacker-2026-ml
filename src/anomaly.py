@@ -207,8 +207,41 @@ def train_anomaly_model(records: list, train_dir: str, model_dir: str):
         useful_features = feature_variance > 1e-6
 
         if useful_features.sum() < 2:
-            print("[anomaly] Features have no variance (blank images?) — using heuristic fallback")
-            model = None
+            print("[anomaly] Features have no variance (blank images?) — supplementing with synthetic data")
+            model = None  # default
+            try:
+                from src.synthetic import generate_records
+                syn_records = generate_records(n=300, seed=42)
+                X_syn, y_syn = [], []
+                feat_len = len(FEATURE_KEYS) + len(TEXT_FEATURE_KEYS) + 1
+                for sr in syn_records:
+                    amt = float(sr.get("total") or 0)
+                    has_vendor = 1.0 if sr.get("vendor") else 0.0
+                    has_date = 1.0 if sr.get("date") else 0.0
+                    is_round = 1.0 if amt > 0 and amt % 50 == 0 and amt >= 100 else 0.0
+                    high_amt = 1.0 if amt > 500 else 0.0
+                    low_amt = 1.0 if 0 < amt < 2 else 0.0
+                    fv = [amt, has_vendor, has_date, is_round, high_amt, low_amt]
+                    # Pad or truncate to feat_len
+                    fv = fv + [0.0] * max(0, feat_len - len(fv))
+                    fv = fv[:feat_len]
+                    X_syn.append(fv)
+                    y_syn.append(sr["label"]["is_forged"])
+                X_new = np.array(X_syn)
+                y_new = np.array(y_syn)
+                if len(set(y_new)) >= 2:
+                    print(f"[anomaly] Synthetic data loaded: {len(X_new)} records ({sum(y_new)} forged)")
+                    model = RandomForestClassifier(
+                        n_estimators=100, max_depth=5,
+                        min_samples_leaf=2, random_state=42,
+                        class_weight='balanced',
+                    )
+                    model.fit(X_new, y_new)
+                    train_acc = model.score(X_new, y_new)
+                    print(f"[anomaly] RF trained on synthetic: {len(X_new)} samples, train acc={train_acc:.2f}")
+            except Exception as e:
+                print(f"[anomaly] Synthetic training failed: {e} — using heuristic fallback")
+                model = None
         else:
             model = RandomForestClassifier(
                 n_estimators=100,
@@ -225,6 +258,22 @@ def train_anomaly_model(records: list, train_dir: str, model_dir: str):
     forged_count = sum(1 for r in records if r.get("label", {}).get("is_forged", 0) == 1)
     forged_ratio = forged_count / len(records) if records else 0.5
 
+    # Compute vendor frequency for heuristic
+    from collections import Counter
+    vendor_counts = Counter(
+        r.get("vendor") or r.get("fields", {}).get("vendor")
+        for r in records
+        if (r.get("vendor") or r.get("fields", {}).get("vendor"))
+    )
+
+    # Compute amount stats for heuristic
+    amounts = [float(r.get("total") or r.get("fields", {}).get("total") or 0) for r in records]
+    amounts = [a for a in amounts if a > 0]
+    amount_stats = {
+        "amount_mean": float(np.mean(amounts)) if amounts else 0,
+        "amount_std": float(np.std(amounts)) if amounts else 1,
+    }
+
     # Save model
     model_path = os.path.join(model_dir, "anomaly_model.pkl")
     with open(model_path, 'wb') as f:
@@ -232,13 +281,16 @@ def train_anomaly_model(records: list, train_dir: str, model_dir: str):
             'model': model,
             'feature_keys': FEATURE_KEYS + TEXT_FEATURE_KEYS + ['amount'],
             'forged_ratio': forged_ratio,
+            'vendor_counts': dict(vendor_counts),
+            'amount_stats': amount_stats,
         }, f)
 
     return model
 
 
 def predict_anomaly(model_data: dict, img_path: str, ocr_text: str,
-                    amount: float, stats: dict) -> int:
+                    amount: float, stats: dict,
+                    vendor: str = None, date_str: str = None) -> int:
     """Predict whether a document is forged."""
     model = model_data.get('model')
 
@@ -260,57 +312,98 @@ def predict_anomaly(model_data: dict, img_path: str, ocr_text: str,
         threshold = 0.45  # Slightly below 0.5 to catch more forgeries
         return 1 if forged_prob >= threshold else 0
 
-    # Heuristic fallback
+    # Heuristic fallback — use rich statistical rules
     forged_ratio = model_data.get('forged_ratio', 0.5)
-    return _heuristic_forgery(amount, stats, img_feats, txt_feats, forged_ratio)
+    vendor_counts = model_data.get('vendor_counts', {})
+    # Use stored amount stats if available (more reliable than per-predict stats)
+    stored_stats = model_data.get('amount_stats', stats)
+    merged_stats = {**stats, **stored_stats}
+    return _heuristic_forgery(
+        amount, merged_stats, img_feats, txt_feats,
+        forged_ratio, vendor=vendor, date_str=date_str, vendor_counts=vendor_counts
+    )
 
 
 def _heuristic_forgery(amount: float, stats: dict,
                        img_feats: dict, txt_feats: dict,
-                       forged_ratio: float = 0.5) -> int:
-    """Rule-based forgery detection when ML model isn't available."""
+                       forged_ratio: float = 0.5,
+                       vendor: str = None,
+                       date_str: str = None,
+                       vendor_counts: dict = None) -> int:
+    """
+    Rule-based forgery detection when ML model isn't available.
+    Uses statistical signals: amount outliers, round numbers, vendor rarity,
+    missing fields, and date anomalies.
+    """
     score = 0.0
     mean = stats.get("amount_mean", 0)
     std = stats.get("amount_std", 1)
 
-    # If images are blank (no features), use amount-only heuristics
     has_image = img_feats.get('img_std', 0) > 1.0
 
+    # === IMAGE SIGNALS (when real images exist) ===
     if has_image:
-        # High noise (possible digital manipulation)
         if img_feats.get('noise_std', 0) > 20:
             score += 1.5
-
-        # Low block variance consistency (copy-paste artifacts)
         bv_std = img_feats.get('block_var_std', 0)
         bv_mean = img_feats.get('block_var_mean', 1)
         if bv_mean > 0 and bv_std / bv_mean < 0.3:
             score += 1.0
-
-        # Unusual entropy
         entropy = img_feats.get('entropy', 0)
         if entropy > 0 and (entropy < 3.0 or entropy > 7.0):
             score += 0.5
-
-        # Edge density anomaly
         if img_feats.get('edge_mean', 0) > 50:
             score += 0.5
-
         return 1 if score >= 1.5 else 0
 
-    # No image features — use amount-based + base rate
+    # === STATISTICAL RULES (text/metadata only) ===
+
+    # 1. Amount z-score outlier (strong signal)
     if std > 0 and amount > 0:
         z = abs(amount - mean) / std
-        if z > 1.5:
-            return 1
+        if z > 2.5:
+            score += 2.0   # strong outlier
+        elif z > 1.5:
+            score += 0.8
 
-    # If forged ratio is high in training, be more aggressive
-    if forged_ratio >= 0.4:
-        # Use a simple hash-based pseudo-random to spread predictions
-        # This ensures ~forged_ratio of predictions are marked forged
-        import hashlib
-        h = int(hashlib.md5(str(amount).encode()).hexdigest()[:8], 16)
-        if (h % 100) < (forged_ratio * 100):
-            return 1
+    # 2. Suspiciously round number (e.g. exactly $100, $500, $1000)
+    if amount > 0 and amount % 50 == 0 and amount >= 100:
+        score += 1.2
 
-    return 0
+    # 3. Extreme high amount (possible inflated receipt)
+    if mean > 0 and amount > mean * 5:
+        score += 1.5
+
+    # 4. Extremely low amount (under-reporting)
+    if 0 < amount < 1.0:
+        score += 1.0
+
+    # 5. Missing vendor (suspicious)
+    if not vendor or vendor.strip() == "":
+        score += 1.0
+
+    # 6. Missing date (suspicious)
+    if not date_str or date_str.strip() == "":
+        score += 0.8
+
+    # 7. Rare/unknown vendor (seen < 2 times in training)
+    if vendor and vendor_counts:
+        count = vendor_counts.get(vendor, 0)
+        if count == 0:
+            score += 1.2   # never seen before
+        elif count == 1:
+            score += 0.5   # only once
+
+    # 8. Weekend transaction date (mild signal)
+    if date_str:
+        try:
+            from datetime import datetime
+            d = datetime.strptime(date_str[:10], "%Y-%m-%d")
+            if d.weekday() >= 5:  # Saturday=5, Sunday=6
+                score += 0.3
+        except Exception:
+            pass
+
+    # Threshold: score >= 2.0 → forged
+    # This gives high precision while still catching obvious forgeries
+    return 1 if score >= 2.0 else 0

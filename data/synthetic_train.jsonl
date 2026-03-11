@@ -1,0 +1,300 @@
+{"id": "syn0000", "image_path": "dummy_data/train/syn0000.png", "vendor": "Zara", "date": "2024-07-23", "total": "110.39", "label": {"is_forged": 0}}
+{"id": "syn0001", "image_path": "dummy_data/train/syn0001.png", "vendor": "H&M", "date": "2023-06-08", "total": "44.36", "label": {"is_forged": 0}}
+{"id": "syn0002", "image_path": "dummy_data/train/syn0002.png", "vendor": "XYZ Store", "date": null, "total": "1.16", "label": {"is_forged": 1}}
+{"id": "syn0003", "image_path": "dummy_data/train/syn0003.png", "vendor": "Costa Coffee", "date": "2024-06-27", "total": "22.67", "label": {"is_forged": 0}}
+{"id": "syn0004", "image_path": "dummy_data/train/syn0004.png", "vendor": "Test Store", "date": "2023-03-11", "total": "200.0", "label": {"is_forged": 1}}
+{"id": "syn0005", "image_path": "dummy_data/train/syn0005.png", "vendor": "Shell Gas", "date": "2024-08-06", "total": "18.1", "label": {"is_forged": 0}}
+{"id": "syn0006", "image_path": "dummy_data/train/syn0006.png", "vendor": "Shell Gas", "date": "2023-02-10", "total": "30.27", "label": {"is_forged": 0}}
+{"id": "syn0007", "image_path": "dummy_data/train/syn0007.png", "vendor": "Tim Hortons", "date": "2024-11-04", "total": "2.99", "label": {"is_forged": 0}}
+{"id": "syn0008", "image_path": "dummy_data/train/syn0008.png", "vendor": "Talabat", "date": "2023-11-18", "total": "500.0", "label": {"is_forged": 1}}
+{"id": "syn0009", "image_path": "dummy_data/train/syn0009.png", "vendor": "KFC", "date": "2024-10-22", "total": "4.91", "label": {"is_forged": 0}}
+{"id": "syn0010", "image_path": "dummy_data/train/syn0010.png", "vendor": "Generic Shop", "date": "2024-09-28", "total": "1.87", "label": {"is_forged": 1}}
+{"id": "syn0011", "image_path": "dummy_data/train/syn0011.png", "vendor": "Starbucks", "date": "2023-08-07", "total": "2.66", "label": {"is_forged": 0}}
+{"id": "syn0012", "image_path": "dummy_data/train/syn0012.png", "vendor": "Talabat", "date": "2023-12-24", "total": "10.79", "label": {"is_forged": 0}}
+{"id": "syn0013", "image_path": "dummy_data/train/syn0013.png", "vendor": "Walmart", "date": "2024-01-14", "total": "74.0", "label": {"is_forged": 0}}
+{"id": "syn0014", "image_path": "dummy_data/train/syn0014.png", "vendor": "Carrefour", "date": "2024-07-10", "total": "6.01", "label": {"is_forged": 0}}
+{"id": "syn0015", "image_path": "dummy_data/train/syn0015.png", "vendor": "Zara", "date": "2024-10-31", "total": "12.61", "label": {"is_forged": 0}}
+{"id": "syn0016", "image_path": "dummy_data/train/syn0016.png", "vendor": "Talabat", "date": "2024-07-21", "total": "1.5", "label": {"is_forged": 0}}
+{"id": "syn0017", "image_path": "dummy_data/train/syn0017.png", "vendor": "Temp Business", "date": "2023-04-23", "total": "200.0", "label": {"is_forged": 1}}
+{"id": "syn0018", "image_path": "dummy_data/train/syn0018.png", "vendor": "BP Station", "date": "2023-08-04", "total": "11.58", "label": {"is_forged": 0}}
+{"id": "syn0019", "image_path": "dummy_data/train/syn0019.png", "vendor": "Zara", "date": "2024-12-04", "total": "14.7", "label": {"is_forged": 0}}
+{"id": "syn0020", "image_path": "dummy_data/train/syn0020.png", "vendor": "IKEA", "date": "2024-06-01", "total": "67.09", "label": {"is_forged": 0}}
+{"id": "syn0021", "image_path": "dummy_data/train/syn0021.png", "vendor": "McDonald's", "date": null, "total": "1000.0", "label": {"is_forged": 1}}
+{"id": "syn0022", "image_path": "dummy_data/train/syn0022.png", "vendor": "Careem", "date": "2023-09-26", "total": "4.91", "label": {"is_forged": 0}}
+{"id": "syn0023", "image_path": "dummy_data/train/syn0023.png", "vendor": "Target", "date": "2024-07-18", "total": "47.31", "label": {"is_forged": 0}}
+{"id": "syn0024", "image_path": "dummy_data/train/syn0024.png", "vendor": "Zara", "date": "2023-01-10", "total": "19.53", "label": {"is_forged": 0}}
+{"id": "syn0025", "image_path": "dummy_data/train/syn0025.png", "vendor": "Starbucks", "date": "2024-12-08", "total": "2.74", "label": {"is_forged": 0}}
+{"id": "syn0026", "image_path": "dummy_data/train/syn0026.png", "vendor": "CVS Pharmacy", "date": "2024-01-14", "total": "27.61", "label": {"is_forged": 0}}
+{"id": "syn0027", "image_path": "dummy_data/train/syn0027.png", "vendor": "Costa Coffee", "date": "2024-03-16", "total": "28.14", "label": {"is_forged": 0}}
+{"id": "syn0028", "image_path": "dummy_data/train/syn0028.png", "vendor": "CVS Pharmacy", "date": "2024-01-09", "total": "1.5", "label": {"is_forged": 0}}
+{"id": "syn0029", "image_path": "dummy_data/train/syn0029.png", "vendor": null, "date": "2023-08-04", "total": "1.72", "label": {"is_forged": 1}}
+{"id": "syn0030", "image_path": "dummy_data/train/syn0030.png", "vendor": "H&M", "date": "2024-07-27", "total": "3.8", "label": {"is_forged": 0}}
+{"id": "syn0031", "image_path": "dummy_data/train/syn0031.png", "vendor": "Pizza Hut", "date": "2023-06-08", "total": "127.52", "label": {"is_forged": 0}}
+{"id": "syn0032", "image_path": "dummy_data/train/syn0032.png", "vendor": "Shell Gas", "date": "2023-07-01", "total": "69.98", "label": {"is_forged": 0}}
+{"id": "syn0033", "image_path": "dummy_data/train/syn0033.png", "vendor": null, "date": "2024-02-26", "total": "250.0", "label": {"is_forged": 1}}
+{"id": "syn0034", "image_path": "dummy_data/train/syn0034.png", "vendor": "Noon Express", "date": "2023-10-01", "total": "58.26", "label": {"is_forged": 0}}
+{"id": "syn0035", "image_path": "dummy_data/train/syn0035.png", "vendor": "Target", "date": "2023-04-21", "total": "54.19", "label": {"is_forged": 0}}
+{"id": "syn0036", "image_path": "dummy_data/train/syn0036.png", "vendor": "KFC", "date": "2024-04-26", "total": "72.0", "label": {"is_forged": 0}}
+{"id": "syn0037", "image_path": "dummy_data/train/syn0037.png", "vendor": "Shell Gas", "date": "2024-04-16", "total": "7.79", "label": {"is_forged": 0}}
+{"id": "syn0038", "image_path": "dummy_data/train/syn0038.png", "vendor": "Al Meera", "date": "2023-08-22", "total": "12.74", "label": {"is_forged": 0}}
+{"id": "syn0039", "image_path": "dummy_data/train/syn0039.png", "vendor": "Temp Business", "date": "2023-03-25", "total": "500.0", "label": {"is_forged": 1}}
+{"id": "syn0040", "image_path": "dummy_data/train/syn0040.png", "vendor": "Nandos", "date": "2023-01-29", "total": "14.08", "label": {"is_forged": 0}}
+{"id": "syn0041", "image_path": "dummy_data/train/syn0041.png", "vendor": "Starbucks", "date": "2023-09-25", "total": "73.36", "label": {"is_forged": 0}}
+{"id": "syn0042", "image_path": "dummy_data/train/syn0042.png", "vendor": "Target", "date": "2023-09-29", "total": "30.41", "label": {"is_forged": 0}}
+{"id": "syn0043", "image_path": "dummy_data/train/syn0043.png", "vendor": "Test Store", "date": null, "total": "1674.25", "label": {"is_forged": 1}}
+{"id": "syn0044", "image_path": "dummy_data/train/syn0044.png", "vendor": "Costa Coffee", "date": "2023-02-15", "total": "7.38", "label": {"is_forged": 0}}
+{"id": "syn0045", "image_path": "dummy_data/train/syn0045.png", "vendor": "Zara", "date": "2024-06-16", "total": "20.05", "label": {"is_forged": 0}}
+{"id": "syn0046", "image_path": "dummy_data/train/syn0046.png", "vendor": "Nandos", "date": "2024-11-17", "total": "40.64", "label": {"is_forged": 0}}
+{"id": "syn0047", "image_path": "dummy_data/train/syn0047.png", "vendor": "Subway", "date": "2023-03-13", "total": "15.85", "label": {"is_forged": 0}}
+{"id": "syn0048", "image_path": "dummy_data/train/syn0048.png", "vendor": "H&M", "date": "2024-09-30", "total": "88.74", "label": {"is_forged": 0}}
+{"id": "syn0049", "image_path": "dummy_data/train/syn0049.png", "vendor": "Starbucks", "date": "2024-02-25", "total": "0.61", "label": {"is_forged": 1}}
+{"id": "syn0050", "image_path": "dummy_data/train/syn0050.png", "vendor": "XYZ Store", "date": "2024-11-24", "total": "250.0", "label": {"is_forged": 1}}
+{"id": "syn0051", "image_path": "dummy_data/train/syn0051.png", "vendor": "Target", "date": "2023-11-05", "total": "33.45", "label": {"is_forged": 0}}
+{"id": "syn0052", "image_path": "dummy_data/train/syn0052.png", "vendor": "7-Eleven", "date": "2024-08-24", "total": "200.0", "label": {"is_forged": 1}}
+{"id": "syn0053", "image_path": "dummy_data/train/syn0053.png", "vendor": "Dominos", "date": "2024-06-07", "total": "39.41", "label": {"is_forged": 0}}
+{"id": "syn0054", "image_path": "dummy_data/train/syn0054.png", "vendor": "Noon.com", "date": "2023-06-23", "total": "55.25", "label": {"is_forged": 0}}
+{"id": "syn0055", "image_path": "dummy_data/train/syn0055.png", "vendor": "H&M", "date": "2024-06-11", "total": "3.1", "label": {"is_forged": 0}}
+{"id": "syn0056", "image_path": "dummy_data/train/syn0056.png", "vendor": "H&M", "date": "2023-12-10", "total": "35.08", "label": {"is_forged": 0}}
+{"id": "syn0057", "image_path": "dummy_data/train/syn0057.png", "vendor": "Walmart", "date": "2023-08-29", "total": "59.71", "label": {"is_forged": 0}}
+{"id": "syn0058", "image_path": "dummy_data/train/syn0058.png", "vendor": "H&M", "date": "2023-07-23", "total": "13.01", "label": {"is_forged": 0}}
+{"id": "syn0059", "image_path": "dummy_data/train/syn0059.png", "vendor": "CVS Pharmacy", "date": "2023-09-08", "total": "1.5", "label": {"is_forged": 0}}
+{"id": "syn0060", "image_path": "dummy_data/train/syn0060.png", "vendor": "Noon.com", "date": "2023-03-16", "total": "33.07", "label": {"is_forged": 0}}
+{"id": "syn0061", "image_path": "dummy_data/train/syn0061.png", "vendor": "Dominos", "date": "2024-10-06", "total": "18.73", "label": {"is_forged": 0}}
+{"id": "syn0062", "image_path": "dummy_data/train/syn0062.png", "vendor": "Zara", "date": "2024-11-02", "total": "0.99", "label": {"is_forged": 1}}
+{"id": "syn0063", "image_path": "dummy_data/train/syn0063.png", "vendor": "Careem", "date": "2023-04-20", "total": "68.92", "label": {"is_forged": 0}}
+{"id": "syn0064", "image_path": "dummy_data/train/syn0064.png", "vendor": "Careem", "date": "2023-06-30", "total": "19.38", "label": {"is_forged": 0}}
+{"id": "syn0065", "image_path": "dummy_data/train/syn0065.png", "vendor": "Zara", "date": "2023-02-21", "total": "25.54", "label": {"is_forged": 0}}
+{"id": "syn0066", "image_path": "dummy_data/train/syn0066.png", "vendor": "Nandos", "date": "2023-05-05", "total": "10.03", "label": {"is_forged": 0}}
+{"id": "syn0067", "image_path": "dummy_data/train/syn0067.png", "vendor": "Dominos", "date": "2024-04-20", "total": "5.01", "label": {"is_forged": 0}}
+{"id": "syn0068", "image_path": "dummy_data/train/syn0068.png", "vendor": null, "date": "2024-03-29", "total": "1.19", "label": {"is_forged": 1}}
+{"id": "syn0069", "image_path": "dummy_data/train/syn0069.png", "vendor": "Noon Express", "date": "2024-03-12", "total": "77.9", "label": {"is_forged": 0}}
+{"id": "syn0070", "image_path": "dummy_data/train/syn0070.png", "vendor": null, "date": "2024-05-01", "total": "1876.65", "label": {"is_forged": 1}}
+{"id": "syn0071", "image_path": "dummy_data/train/syn0071.png", "vendor": "Careem", "date": "2024-10-14", "total": "9.94", "label": {"is_forged": 0}}
+{"id": "syn0072", "image_path": "dummy_data/train/syn0072.png", "vendor": "BP Station", "date": "2024-06-17", "total": "50.81", "label": {"is_forged": 0}}
+{"id": "syn0073", "image_path": "dummy_data/train/syn0073.png", "vendor": "Noon.com", "date": "2023-10-09", "total": "34.49", "label": {"is_forged": 0}}
+{"id": "syn0074", "image_path": "dummy_data/train/syn0074.png", "vendor": "Dominos", "date": "2023-10-20", "total": "2.82", "label": {"is_forged": 0}}
+{"id": "syn0075", "image_path": "dummy_data/train/syn0075.png", "vendor": "Generic Shop", "date": "2023-06-04", "total": "50.0", "label": {"is_forged": 1}}
+{"id": "syn0076", "image_path": "dummy_data/train/syn0076.png", "vendor": "Zara", "date": "2023-08-08", "total": "5.8", "label": {"is_forged": 0}}
+{"id": "syn0077", "image_path": "dummy_data/train/syn0077.png", "vendor": "Walmart", "date": "2023-12-05", "total": "18.76", "label": {"is_forged": 0}}
+{"id": "syn0078", "image_path": "dummy_data/train/syn0078.png", "vendor": "Nandos", "date": "2023-03-05", "total": "21.95", "label": {"is_forged": 0}}
+{"id": "syn0079", "image_path": "dummy_data/train/syn0079.png", "vendor": "Subway", "date": "2024-02-03", "total": "62.62", "label": {"is_forged": 0}}
+{"id": "syn0080", "image_path": "dummy_data/train/syn0080.png", "vendor": "Careem", "date": "2024-12-13", "total": "30.7", "label": {"is_forged": 0}}
+{"id": "syn0081", "image_path": "dummy_data/train/syn0081.png", "vendor": "7-Eleven", "date": "2024-08-12", "total": "68.01", "label": {"is_forged": 0}}
+{"id": "syn0082", "image_path": "dummy_data/train/syn0082.png", "vendor": "KFC", "date": "2023-12-27", "total": "22.68", "label": {"is_forged": 0}}
+{"id": "syn0083", "image_path": "dummy_data/train/syn0083.png", "vendor": "Carrefour", "date": "2024-03-05", "total": "49.01", "label": {"is_forged": 0}}
+{"id": "syn0084", "image_path": "dummy_data/train/syn0084.png", "vendor": "Nandos", "date": "2024-07-13", "total": "48.17", "label": {"is_forged": 0}}
+{"id": "syn0085", "image_path": "dummy_data/train/syn0085.png", "vendor": "Tim Hortons", "date": "2024-05-14", "total": "79.83", "label": {"is_forged": 0}}
+{"id": "syn0086", "image_path": "dummy_data/train/syn0086.png", "vendor": "Unknown Vendor", "date": "2024-02-19", "total": "1266.63", "label": {"is_forged": 1}}
+{"id": "syn0087", "image_path": "dummy_data/train/syn0087.png", "vendor": "Dominos", "date": "2024-09-29", "total": "88.2", "label": {"is_forged": 0}}
+{"id": "syn0088", "image_path": "dummy_data/train/syn0088.png", "vendor": "Nandos", "date": "2024-02-08", "total": "1.5", "label": {"is_forged": 0}}
+{"id": "syn0089", "image_path": "dummy_data/train/syn0089.png", "vendor": "H&M", "date": "2024-04-21", "total": "250.0", "label": {"is_forged": 1}}
+{"id": "syn0090", "image_path": "dummy_data/train/syn0090.png", "vendor": "Subway", "date": "2023-12-12", "total": "21.22", "label": {"is_forged": 0}}
+{"id": "syn0091", "image_path": "dummy_data/train/syn0091.png", "vendor": "Careem", "date": "2023-10-12", "total": "74.1", "label": {"is_forged": 0}}
+{"id": "syn0092", "image_path": "dummy_data/train/syn0092.png", "vendor": "Careem", "date": "2024-03-07", "total": "105.7", "label": {"is_forged": 0}}
+{"id": "syn0093", "image_path": "dummy_data/train/syn0093.png", "vendor": "BP Station", "date": "2024-04-26", "total": "63.04", "label": {"is_forged": 0}}
+{"id": "syn0094", "image_path": "dummy_data/train/syn0094.png", "vendor": "Test Store", "date": "2023-03-12", "total": "500.0", "label": {"is_forged": 1}}
+{"id": "syn0095", "image_path": "dummy_data/train/syn0095.png", "vendor": "IKEA", "date": "2023-02-01", "total": "1.5", "label": {"is_forged": 0}}
+{"id": "syn0096", "image_path": "dummy_data/train/syn0096.png", "vendor": "Shell Gas", "date": "2023-01-21", "total": "7.78", "label": {"is_forged": 0}}
+{"id": "syn0097", "image_path": "dummy_data/train/syn0097.png", "vendor": "Tim Hortons", "date": "2023-05-10", "total": "5.79", "label": {"is_forged": 0}}
+{"id": "syn0098", "image_path": "dummy_data/train/syn0098.png", "vendor": "Noon.com", "date": "2024-07-31", "total": "38.75", "label": {"is_forged": 0}}
+{"id": "syn0099", "image_path": "dummy_data/train/syn0099.png", "vendor": "Subway", "date": "2023-09-20", "total": "21.89", "label": {"is_forged": 0}}
+{"id": "syn0100", "image_path": "dummy_data/train/syn0100.png", "vendor": "Careem", "date": "2024-09-12", "total": "16.11", "label": {"is_forged": 0}}
+{"id": "syn0101", "image_path": "dummy_data/train/syn0101.png", "vendor": "Tim Hortons", "date": "2023-04-28", "total": "116.09", "label": {"is_forged": 0}}
+{"id": "syn0102", "image_path": "dummy_data/train/syn0102.png", "vendor": "Careem", "date": "2023-11-15", "total": "59.88", "label": {"is_forged": 0}}
+{"id": "syn0103", "image_path": "dummy_data/train/syn0103.png", "vendor": "Starbucks", "date": "2023-11-16", "total": "30.25", "label": {"is_forged": 0}}
+{"id": "syn0104", "image_path": "dummy_data/train/syn0104.png", "vendor": "Costa Coffee", "date": "2024-01-20", "total": "39.59", "label": {"is_forged": 0}}
+{"id": "syn0105", "image_path": "dummy_data/train/syn0105.png", "vendor": "KFC", "date": "2023-07-23", "total": "99.34", "label": {"is_forged": 0}}
+{"id": "syn0106", "image_path": "dummy_data/train/syn0106.png", "vendor": "Temp Business", "date": "2023-11-05", "total": "0.49", "label": {"is_forged": 1}}
+{"id": "syn0107", "image_path": "dummy_data/train/syn0107.png", "vendor": null, "date": "2023-12-22", "total": "50.0", "label": {"is_forged": 1}}
+{"id": "syn0108", "image_path": "dummy_data/train/syn0108.png", "vendor": null, "date": "2024-03-09", "total": "250.0", "label": {"is_forged": 1}}
+{"id": "syn0109", "image_path": "dummy_data/train/syn0109.png", "vendor": "Dominos", "date": "2024-10-28", "total": "0.88", "label": {"is_forged": 1}}
+{"id": "syn0110", "image_path": "dummy_data/train/syn0110.png", "vendor": "Nandos", "date": "2024-04-21", "total": "52.15", "label": {"is_forged": 0}}
+{"id": "syn0111", "image_path": "dummy_data/train/syn0111.png", "vendor": "Pizza Hut", "date": "2024-08-29", "total": "61.15", "label": {"is_forged": 0}}
+{"id": "syn0112", "image_path": "dummy_data/train/syn0112.png", "vendor": "BP Station", "date": "2023-09-09", "total": "13.62", "label": {"is_forged": 0}}
+{"id": "syn0113", "image_path": "dummy_data/train/syn0113.png", "vendor": "Walmart", "date": "2024-04-06", "total": "11.45", "label": {"is_forged": 0}}
+{"id": "syn0114", "image_path": "dummy_data/train/syn0114.png", "vendor": "Shell Gas", "date": "2024-08-06", "total": "48.59", "label": {"is_forged": 0}}
+{"id": "syn0115", "image_path": "dummy_data/train/syn0115.png", "vendor": "Tim Hortons", "date": "2023-12-11", "total": "38.61", "label": {"is_forged": 0}}
+{"id": "syn0116", "image_path": "dummy_data/train/syn0116.png", "vendor": "7-Eleven", "date": "2023-11-29", "total": "23.86", "label": {"is_forged": 0}}
+{"id": "syn0117", "image_path": "dummy_data/train/syn0117.png", "vendor": "Target", "date": "2023-12-30", "total": "23.4", "label": {"is_forged": 0}}
+{"id": "syn0118", "image_path": "dummy_data/train/syn0118.png", "vendor": "BP Station", "date": "2024-09-02", "total": "14.56", "label": {"is_forged": 0}}
+{"id": "syn0119", "image_path": "dummy_data/train/syn0119.png", "vendor": "Zara", "date": "2024-07-23", "total": "74.24", "label": {"is_forged": 0}}
+{"id": "syn0120", "image_path": "dummy_data/train/syn0120.png", "vendor": "7-Eleven", "date": "2023-07-15", "total": "25.44", "label": {"is_forged": 0}}
+{"id": "syn0121", "image_path": "dummy_data/train/syn0121.png", "vendor": "Temp Business", "date": "2024-05-05", "total": "1466.21", "label": {"is_forged": 1}}
+{"id": "syn0122", "image_path": "dummy_data/train/syn0122.png", "vendor": "Dominos", "date": "2023-04-06", "total": "55.11", "label": {"is_forged": 0}}
+{"id": "syn0123", "image_path": "dummy_data/train/syn0123.png", "vendor": "Unknown Vendor", "date": "2024-04-29", "total": "0.62", "label": {"is_forged": 1}}
+{"id": "syn0124", "image_path": "dummy_data/train/syn0124.png", "vendor": "Al Meera", "date": "2024-07-17", "total": "19.4", "label": {"is_forged": 0}}
+{"id": "syn0125", "image_path": "dummy_data/train/syn0125.png", "vendor": "Zara", "date": "2023-07-23", "total": "1167.95", "label": {"is_forged": 1}}
+{"id": "syn0126", "image_path": "dummy_data/train/syn0126.png", "vendor": null, "date": "2023-10-11", "total": "200.0", "label": {"is_forged": 1}}
+{"id": "syn0127", "image_path": "dummy_data/train/syn0127.png", "vendor": null, "date": null, "total": "1139.6", "label": {"is_forged": 1}}
+{"id": "syn0128", "image_path": "dummy_data/train/syn0128.png", "vendor": "7-Eleven", "date": "2023-05-10", "total": "43.09", "label": {"is_forged": 0}}
+{"id": "syn0129", "image_path": "dummy_data/train/syn0129.png", "vendor": "BP Station", "date": "2023-02-25", "total": "1.63", "label": {"is_forged": 0}}
+{"id": "syn0130", "image_path": "dummy_data/train/syn0130.png", "vendor": "Nandos", "date": "2023-05-10", "total": "12.09", "label": {"is_forged": 0}}
+{"id": "syn0131", "image_path": "dummy_data/train/syn0131.png", "vendor": null, "date": "2023-10-21", "total": "0.21", "label": {"is_forged": 1}}
+{"id": "syn0132", "image_path": "dummy_data/train/syn0132.png", "vendor": "Lulu Hypermarket", "date": "2023-02-22", "total": "7.13", "label": {"is_forged": 0}}
+{"id": "syn0133", "image_path": "dummy_data/train/syn0133.png", "vendor": "BP Station", "date": "2024-05-04", "total": "99.1", "label": {"is_forged": 0}}
+{"id": "syn0134", "image_path": "dummy_data/train/syn0134.png", "vendor": "Starbucks", "date": "2024-02-15", "total": "60.43", "label": {"is_forged": 0}}
+{"id": "syn0135", "image_path": "dummy_data/train/syn0135.png", "vendor": "Noon.com", "date": "2024-10-06", "total": "2.69", "label": {"is_forged": 0}}
+{"id": "syn0136", "image_path": "dummy_data/train/syn0136.png", "vendor": "H&M", "date": "2023-06-02", "total": "1.93", "label": {"is_forged": 0}}
+{"id": "syn0137", "image_path": "dummy_data/train/syn0137.png", "vendor": "Costa Coffee", "date": "2023-03-29", "total": "104.24", "label": {"is_forged": 0}}
+{"id": "syn0138", "image_path": "dummy_data/train/syn0138.png", "vendor": "Shell Gas", "date": "2024-03-02", "total": "4.41", "label": {"is_forged": 0}}
+{"id": "syn0139", "image_path": "dummy_data/train/syn0139.png", "vendor": null, "date": "2024-04-06", "total": "0.46", "label": {"is_forged": 1}}
+{"id": "syn0140", "image_path": "dummy_data/train/syn0140.png", "vendor": "Carrefour", "date": "2024-03-15", "total": "68.86", "label": {"is_forged": 0}}
+{"id": "syn0141", "image_path": "dummy_data/train/syn0141.png", "vendor": "Carrefour", "date": "2023-03-03", "total": "29.43", "label": {"is_forged": 0}}
+{"id": "syn0142", "image_path": "dummy_data/train/syn0142.png", "vendor": null, "date": "2023-08-05", "total": "1.9", "label": {"is_forged": 1}}
+{"id": "syn0143", "image_path": "dummy_data/train/syn0143.png", "vendor": "Walmart", "date": "2023-06-27", "total": "5.98", "label": {"is_forged": 0}}
+{"id": "syn0144", "image_path": "dummy_data/train/syn0144.png", "vendor": "Target", "date": "2024-04-26", "total": "1000.0", "label": {"is_forged": 1}}
+{"id": "syn0145", "image_path": "dummy_data/train/syn0145.png", "vendor": "Shell Gas", "date": "2023-10-17", "total": "11.89", "label": {"is_forged": 0}}
+{"id": "syn0146", "image_path": "dummy_data/train/syn0146.png", "vendor": "Zara", "date": "2023-03-14", "total": "68.72", "label": {"is_forged": 0}}
+{"id": "syn0147", "image_path": "dummy_data/train/syn0147.png", "vendor": null, "date": "2024-11-08", "total": "1.58", "label": {"is_forged": 1}}
+{"id": "syn0148", "image_path": "dummy_data/train/syn0148.png", "vendor": "Subway", "date": "2024-07-11", "total": "19.38", "label": {"is_forged": 0}}
+{"id": "syn0149", "image_path": "dummy_data/train/syn0149.png", "vendor": "Shell Gas", "date": "2023-09-30", "total": "36.51", "label": {"is_forged": 0}}
+{"id": "syn0150", "image_path": "dummy_data/train/syn0150.png", "vendor": "CVS Pharmacy", "date": "2023-06-19", "total": "2.59", "label": {"is_forged": 0}}
+{"id": "syn0151", "image_path": "dummy_data/train/syn0151.png", "vendor": "Carrefour", "date": "2024-08-05", "total": "31.64", "label": {"is_forged": 0}}
+{"id": "syn0152", "image_path": "dummy_data/train/syn0152.png", "vendor": "Carrefour", "date": "2024-04-24", "total": "20.24", "label": {"is_forged": 0}}
+{"id": "syn0153", "image_path": "dummy_data/train/syn0153.png", "vendor": "Zara", "date": "2024-02-17", "total": "12.69", "label": {"is_forged": 0}}
+{"id": "syn0154", "image_path": "dummy_data/train/syn0154.png", "vendor": "BP Station", "date": "2024-05-20", "total": "24.29", "label": {"is_forged": 0}}
+{"id": "syn0155", "image_path": "dummy_data/train/syn0155.png", "vendor": "Dominos", "date": "2023-02-10", "total": "2.94", "label": {"is_forged": 0}}
+{"id": "syn0156", "image_path": "dummy_data/train/syn0156.png", "vendor": null, "date": "2023-08-26", "total": "1.21", "label": {"is_forged": 1}}
+{"id": "syn0157", "image_path": "dummy_data/train/syn0157.png", "vendor": "7-Eleven", "date": "2023-02-11", "total": "1.35", "label": {"is_forged": 1}}
+{"id": "syn0158", "image_path": "dummy_data/train/syn0158.png", "vendor": "Target", "date": "2024-10-29", "total": "22.25", "label": {"is_forged": 0}}
+{"id": "syn0159", "image_path": "dummy_data/train/syn0159.png", "vendor": "BP Station", "date": "2024-05-18", "total": "50.0", "label": {"is_forged": 1}}
+{"id": "syn0160", "image_path": "dummy_data/train/syn0160.png", "vendor": "Noon.com", "date": "2023-12-08", "total": "14.97", "label": {"is_forged": 0}}
+{"id": "syn0161", "image_path": "dummy_data/train/syn0161.png", "vendor": "Lulu Hypermarket", "date": "2023-06-14", "total": "38.82", "label": {"is_forged": 0}}
+{"id": "syn0162", "image_path": "dummy_data/train/syn0162.png", "vendor": "Lulu Hypermarket", "date": "2024-05-22", "total": "18.56", "label": {"is_forged": 0}}
+{"id": "syn0163", "image_path": "dummy_data/train/syn0163.png", "vendor": "Carrefour", "date": "2024-02-15", "total": "38.03", "label": {"is_forged": 0}}
+{"id": "syn0164", "image_path": "dummy_data/train/syn0164.png", "vendor": "Careem", "date": "2024-04-10", "total": "27.96", "label": {"is_forged": 0}}
+{"id": "syn0165", "image_path": "dummy_data/train/syn0165.png", "vendor": "Walmart", "date": "2023-11-28", "total": "13.22", "label": {"is_forged": 0}}
+{"id": "syn0166", "image_path": "dummy_data/train/syn0166.png", "vendor": "Starbucks", "date": "2024-02-18", "total": "122.95", "label": {"is_forged": 0}}
+{"id": "syn0167", "image_path": "dummy_data/train/syn0167.png", "vendor": "Talabat", "date": "2023-01-02", "total": "60.99", "label": {"is_forged": 0}}
+{"id": "syn0168", "image_path": "dummy_data/train/syn0168.png", "vendor": "H&M", "date": "2024-04-18", "total": "71.24", "label": {"is_forged": 0}}
+{"id": "syn0169", "image_path": "dummy_data/train/syn0169.png", "vendor": "Pizza Hut", "date": "2024-06-14", "total": "1.95", "label": {"is_forged": 0}}
+{"id": "syn0170", "image_path": "dummy_data/train/syn0170.png", "vendor": "Careem", "date": "2023-10-01", "total": "1330.45", "label": {"is_forged": 1}}
+{"id": "syn0171", "image_path": "dummy_data/train/syn0171.png", "vendor": null, "date": null, "total": "1637.9", "label": {"is_forged": 1}}
+{"id": "syn0172", "image_path": "dummy_data/train/syn0172.png", "vendor": "Pizza Hut", "date": "2023-04-27", "total": "3.42", "label": {"is_forged": 0}}
+{"id": "syn0173", "image_path": "dummy_data/train/syn0173.png", "vendor": "Starbucks", "date": "2023-10-26", "total": "984.77", "label": {"is_forged": 1}}
+{"id": "syn0174", "image_path": "dummy_data/train/syn0174.png", "vendor": "BP Station", "date": "2024-05-09", "total": "18.79", "label": {"is_forged": 0}}
+{"id": "syn0175", "image_path": "dummy_data/train/syn0175.png", "vendor": "Noon.com", "date": "2024-07-18", "total": "9.78", "label": {"is_forged": 0}}
+{"id": "syn0176", "image_path": "dummy_data/train/syn0176.png", "vendor": "CVS Pharmacy", "date": "2024-09-05", "total": "16.93", "label": {"is_forged": 0}}
+{"id": "syn0177", "image_path": "dummy_data/train/syn0177.png", "vendor": "Talabat", "date": "2023-05-20", "total": "48.01", "label": {"is_forged": 0}}
+{"id": "syn0178", "image_path": "dummy_data/train/syn0178.png", "vendor": "Walmart", "date": "2024-02-29", "total": "11.32", "label": {"is_forged": 0}}
+{"id": "syn0179", "image_path": "dummy_data/train/syn0179.png", "vendor": "Lulu Hypermarket", "date": "2024-06-03", "total": "95.27", "label": {"is_forged": 0}}
+{"id": "syn0180", "image_path": "dummy_data/train/syn0180.png", "vendor": "BP Station", "date": "2023-10-17", "total": "60.12", "label": {"is_forged": 0}}
+{"id": "syn0181", "image_path": "dummy_data/train/syn0181.png", "vendor": "Noon Express", "date": "2024-08-24", "total": "12.41", "label": {"is_forged": 0}}
+{"id": "syn0182", "image_path": "dummy_data/train/syn0182.png", "vendor": "Costa Coffee", "date": "2024-05-16", "total": "150.0", "label": {"is_forged": 0}}
+{"id": "syn0183", "image_path": "dummy_data/train/syn0183.png", "vendor": "CVS Pharmacy", "date": "2024-05-10", "total": "20.71", "label": {"is_forged": 0}}
+{"id": "syn0184", "image_path": "dummy_data/train/syn0184.png", "vendor": "Al Meera", "date": "2024-07-10", "total": "14.14", "label": {"is_forged": 0}}
+{"id": "syn0185", "image_path": "dummy_data/train/syn0185.png", "vendor": "KFC", "date": "2023-11-26", "total": "21.27", "label": {"is_forged": 0}}
+{"id": "syn0186", "image_path": "dummy_data/train/syn0186.png", "vendor": "Subway", "date": "2023-09-02", "total": "138.3", "label": {"is_forged": 0}}
+{"id": "syn0187", "image_path": "dummy_data/train/syn0187.png", "vendor": "Shell Gas", "date": "2024-05-04", "total": "0.83", "label": {"is_forged": 1}}
+{"id": "syn0188", "image_path": "dummy_data/train/syn0188.png", "vendor": null, "date": "2023-02-11", "total": "1.96", "label": {"is_forged": 1}}
+{"id": "syn0189", "image_path": "dummy_data/train/syn0189.png", "vendor": "Starbucks", "date": null, "total": "0.89", "label": {"is_forged": 1}}
+{"id": "syn0190", "image_path": "dummy_data/train/syn0190.png", "vendor": "CVS Pharmacy", "date": "2024-11-01", "total": "18.47", "label": {"is_forged": 0}}
+{"id": "syn0191", "image_path": "dummy_data/train/syn0191.png", "vendor": "CVS Pharmacy", "date": "2023-09-29", "total": "2.72", "label": {"is_forged": 0}}
+{"id": "syn0192", "image_path": "dummy_data/train/syn0192.png", "vendor": "Lulu Hypermarket", "date": "2024-02-12", "total": "34.17", "label": {"is_forged": 0}}
+{"id": "syn0193", "image_path": "dummy_data/train/syn0193.png", "vendor": "IKEA", "date": "2023-12-03", "total": "2.93", "label": {"is_forged": 0}}
+{"id": "syn0194", "image_path": "dummy_data/train/syn0194.png", "vendor": "H&M", "date": "2024-01-25", "total": "68.65", "label": {"is_forged": 0}}
+{"id": "syn0195", "image_path": "dummy_data/train/syn0195.png", "vendor": "Lulu Hypermarket", "date": "2024-05-14", "total": "34.5", "label": {"is_forged": 0}}
+{"id": "syn0196", "image_path": "dummy_data/train/syn0196.png", "vendor": "Nandos", "date": "2023-03-12", "total": "1.5", "label": {"is_forged": 0}}
+{"id": "syn0197", "image_path": "dummy_data/train/syn0197.png", "vendor": "Shell Gas", "date": "2023-10-22", "total": "34.91", "label": {"is_forged": 0}}
+{"id": "syn0198", "image_path": "dummy_data/train/syn0198.png", "vendor": "Shell Gas", "date": "2024-03-20", "total": "48.07", "label": {"is_forged": 0}}
+{"id": "syn0199", "image_path": "dummy_data/train/syn0199.png", "vendor": null, "date": "2023-06-25", "total": "1.41", "label": {"is_forged": 1}}
+{"id": "syn0200", "image_path": "dummy_data/train/syn0200.png", "vendor": "McDonald's", "date": "2023-02-27", "total": "13.72", "label": {"is_forged": 0}}
+{"id": "syn0201", "image_path": "dummy_data/train/syn0201.png", "vendor": "Carrefour", "date": "2024-03-17", "total": "15.54", "label": {"is_forged": 0}}
+{"id": "syn0202", "image_path": "dummy_data/train/syn0202.png", "vendor": "CVS Pharmacy", "date": "2024-02-26", "total": "9.8", "label": {"is_forged": 0}}
+{"id": "syn0203", "image_path": "dummy_data/train/syn0203.png", "vendor": "Costa Coffee", "date": "2023-07-04", "total": "40.08", "label": {"is_forged": 0}}
+{"id": "syn0204", "image_path": "dummy_data/train/syn0204.png", "vendor": "ACME Corp", "date": "2024-05-24", "total": "1259.05", "label": {"is_forged": 1}}
+{"id": "syn0205", "image_path": "dummy_data/train/syn0205.png", "vendor": "CVS Pharmacy", "date": "2024-10-15", "total": "9.25", "label": {"is_forged": 0}}
+{"id": "syn0206", "image_path": "dummy_data/train/syn0206.png", "vendor": "Generic Shop", "date": "2023-10-22", "total": "1.8", "label": {"is_forged": 1}}
+{"id": "syn0207", "image_path": "dummy_data/train/syn0207.png", "vendor": "Target", "date": "2023-12-20", "total": "2.69", "label": {"is_forged": 0}}
+{"id": "syn0208", "image_path": "dummy_data/train/syn0208.png", "vendor": "Costa Coffee", "date": "2024-03-10", "total": "12.44", "label": {"is_forged": 0}}
+{"id": "syn0209", "image_path": "dummy_data/train/syn0209.png", "vendor": "Zara", "date": "2023-11-06", "total": "10.07", "label": {"is_forged": 0}}
+{"id": "syn0210", "image_path": "dummy_data/train/syn0210.png", "vendor": "Subway", "date": "2024-05-09", "total": "150.0", "label": {"is_forged": 0}}
+{"id": "syn0211", "image_path": "dummy_data/train/syn0211.png", "vendor": "Unknown Vendor", "date": null, "total": "1489.77", "label": {"is_forged": 1}}
+{"id": "syn0212", "image_path": "dummy_data/train/syn0212.png", "vendor": "H&M", "date": "2023-01-09", "total": "17.64", "label": {"is_forged": 0}}
+{"id": "syn0213", "image_path": "dummy_data/train/syn0213.png", "vendor": "Costa Coffee", "date": "2023-02-20", "total": "70.1", "label": {"is_forged": 0}}
+{"id": "syn0214", "image_path": "dummy_data/train/syn0214.png", "vendor": "Tim Hortons", "date": "2023-10-21", "total": "47.85", "label": {"is_forged": 0}}
+{"id": "syn0215", "image_path": "dummy_data/train/syn0215.png", "vendor": null, "date": null, "total": "750.0", "label": {"is_forged": 1}}
+{"id": "syn0216", "image_path": "dummy_data/train/syn0216.png", "vendor": "BP Station", "date": "2024-11-06", "total": "39.64", "label": {"is_forged": 0}}
+{"id": "syn0217", "image_path": "dummy_data/train/syn0217.png", "vendor": "H&M", "date": "2024-10-05", "total": "63.78", "label": {"is_forged": 0}}
+{"id": "syn0218", "image_path": "dummy_data/train/syn0218.png", "vendor": "Starbucks", "date": "2024-10-23", "total": "81.8", "label": {"is_forged": 0}}
+{"id": "syn0219", "image_path": "dummy_data/train/syn0219.png", "vendor": "Cash Only Store", "date": "2023-04-03", "total": "1495.49", "label": {"is_forged": 1}}
+{"id": "syn0220", "image_path": "dummy_data/train/syn0220.png", "vendor": "Lulu Hypermarket", "date": "2023-06-29", "total": "48.17", "label": {"is_forged": 0}}
+{"id": "syn0221", "image_path": "dummy_data/train/syn0221.png", "vendor": "Subway", "date": "2024-07-06", "total": "4.96", "label": {"is_forged": 0}}
+{"id": "syn0222", "image_path": "dummy_data/train/syn0222.png", "vendor": null, "date": "2023-06-18", "total": "1402.15", "label": {"is_forged": 1}}
+{"id": "syn0223", "image_path": "dummy_data/train/syn0223.png", "vendor": "Noon.com", "date": "2023-10-30", "total": "119.8", "label": {"is_forged": 0}}
+{"id": "syn0224", "image_path": "dummy_data/train/syn0224.png", "vendor": "Noon Express", "date": "2023-04-28", "total": "71.51", "label": {"is_forged": 0}}
+{"id": "syn0225", "image_path": "dummy_data/train/syn0225.png", "vendor": "Walmart", "date": "2024-11-21", "total": "200.0", "label": {"is_forged": 1}}
+{"id": "syn0226", "image_path": "dummy_data/train/syn0226.png", "vendor": "Nandos", "date": "2024-02-09", "total": "15.94", "label": {"is_forged": 0}}
+{"id": "syn0227", "image_path": "dummy_data/train/syn0227.png", "vendor": "7-Eleven", "date": "2023-05-07", "total": "10.75", "label": {"is_forged": 0}}
+{"id": "syn0228", "image_path": "dummy_data/train/syn0228.png", "vendor": "Dominos", "date": "2024-11-19", "total": "16.09", "label": {"is_forged": 0}}
+{"id": "syn0229", "image_path": "dummy_data/train/syn0229.png", "vendor": "Unknown Vendor", "date": "2023-09-03", "total": "1.88", "label": {"is_forged": 1}}
+{"id": "syn0230", "image_path": "dummy_data/train/syn0230.png", "vendor": "Nandos", "date": "2024-09-16", "total": "13.91", "label": {"is_forged": 0}}
+{"id": "syn0231", "image_path": "dummy_data/train/syn0231.png", "vendor": "ACME Corp", "date": "2024-10-26", "total": "1357.12", "label": {"is_forged": 1}}
+{"id": "syn0232", "image_path": "dummy_data/train/syn0232.png", "vendor": "CVS Pharmacy", "date": "2023-02-08", "total": "1.62", "label": {"is_forged": 0}}
+{"id": "syn0233", "image_path": "dummy_data/train/syn0233.png", "vendor": "Carrefour", "date": "2023-04-29", "total": "150.0", "label": {"is_forged": 0}}
+{"id": "syn0234", "image_path": "dummy_data/train/syn0234.png", "vendor": "Test Store", "date": "2024-12-14", "total": "1000.0", "label": {"is_forged": 1}}
+{"id": "syn0235", "image_path": "dummy_data/train/syn0235.png", "vendor": "Pizza Hut", "date": "2023-06-08", "total": "30.98", "label": {"is_forged": 0}}
+{"id": "syn0236", "image_path": "dummy_data/train/syn0236.png", "vendor": "Pizza Hut", "date": "2024-05-16", "total": "37.24", "label": {"is_forged": 0}}
+{"id": "syn0237", "image_path": "dummy_data/train/syn0237.png", "vendor": "Tim Hortons", "date": "2023-10-14", "total": "18.36", "label": {"is_forged": 0}}
+{"id": "syn0238", "image_path": "dummy_data/train/syn0238.png", "vendor": "McDonald's", "date": "2023-08-11", "total": "41.02", "label": {"is_forged": 0}}
+{"id": "syn0239", "image_path": "dummy_data/train/syn0239.png", "vendor": "Dominos", "date": "2023-08-30", "total": "20.59", "label": {"is_forged": 0}}
+{"id": "syn0240", "image_path": "dummy_data/train/syn0240.png", "vendor": "Al Meera", "date": "2024-12-03", "total": "3.66", "label": {"is_forged": 0}}
+{"id": "syn0241", "image_path": "dummy_data/train/syn0241.png", "vendor": "IKEA", "date": "2023-05-06", "total": "1277.77", "label": {"is_forged": 1}}
+{"id": "syn0242", "image_path": "dummy_data/train/syn0242.png", "vendor": "Dominos", "date": "2023-08-06", "total": "3.37", "label": {"is_forged": 0}}
+{"id": "syn0243", "image_path": "dummy_data/train/syn0243.png", "vendor": null, "date": "2023-09-07", "total": "825.63", "label": {"is_forged": 1}}
+{"id": "syn0244", "image_path": "dummy_data/train/syn0244.png", "vendor": "Costa Coffee", "date": "2024-07-21", "total": "8.04", "label": {"is_forged": 0}}
+{"id": "syn0245", "image_path": "dummy_data/train/syn0245.png", "vendor": "XYZ Store", "date": null, "total": "0.47", "label": {"is_forged": 1}}
+{"id": "syn0246", "image_path": "dummy_data/train/syn0246.png", "vendor": null, "date": null, "total": "200.0", "label": {"is_forged": 1}}
+{"id": "syn0247", "image_path": "dummy_data/train/syn0247.png", "vendor": "7-Eleven", "date": "2024-01-02", "total": "4.95", "label": {"is_forged": 0}}
+{"id": "syn0248", "image_path": "dummy_data/train/syn0248.png", "vendor": null, "date": null, "total": "500.0", "label": {"is_forged": 1}}
+{"id": "syn0249", "image_path": "dummy_data/train/syn0249.png", "vendor": "Pizza Hut", "date": "2023-03-07", "total": "26.14", "label": {"is_forged": 0}}
+{"id": "syn0250", "image_path": "dummy_data/train/syn0250.png", "vendor": "Careem", "date": "2023-08-19", "total": "1512.4", "label": {"is_forged": 1}}
+{"id": "syn0251", "image_path": "dummy_data/train/syn0251.png", "vendor": null, "date": null, "total": "0.61", "label": {"is_forged": 1}}
+{"id": "syn0252", "image_path": "dummy_data/train/syn0252.png", "vendor": "Noon.com", "date": "2024-03-12", "total": "65.77", "label": {"is_forged": 0}}
+{"id": "syn0253", "image_path": "dummy_data/train/syn0253.png", "vendor": "H&M", "date": "2024-12-30", "total": "4.0", "label": {"is_forged": 0}}
+{"id": "syn0254", "image_path": "dummy_data/train/syn0254.png", "vendor": "Dominos", "date": "2023-03-24", "total": "2.67", "label": {"is_forged": 0}}
+{"id": "syn0255", "image_path": "dummy_data/train/syn0255.png", "vendor": "Lulu Hypermarket", "date": "2023-03-09", "total": "32.8", "label": {"is_forged": 0}}
+{"id": "syn0256", "image_path": "dummy_data/train/syn0256.png", "vendor": "CVS Pharmacy", "date": "2024-10-10", "total": "11.26", "label": {"is_forged": 0}}
+{"id": "syn0257", "image_path": "dummy_data/train/syn0257.png", "vendor": "Zara", "date": "2024-04-09", "total": "50.0", "label": {"is_forged": 1}}
+{"id": "syn0258", "image_path": "dummy_data/train/syn0258.png", "vendor": "Pizza Hut", "date": "2024-12-19", "total": "3.66", "label": {"is_forged": 0}}
+{"id": "syn0259", "image_path": "dummy_data/train/syn0259.png", "vendor": "Temp Business", "date": "2023-08-09", "total": "1.54", "label": {"is_forged": 1}}
+{"id": "syn0260", "image_path": "dummy_data/train/syn0260.png", "vendor": "Shell Gas", "date": "2024-04-09", "total": "18.69", "label": {"is_forged": 0}}
+{"id": "syn0261", "image_path": "dummy_data/train/syn0261.png", "vendor": "Noon Express", "date": null, "total": "1000.0", "label": {"is_forged": 1}}
+{"id": "syn0262", "image_path": "dummy_data/train/syn0262.png", "vendor": "Starbucks", "date": "2024-01-17", "total": "47.77", "label": {"is_forged": 0}}
+{"id": "syn0263", "image_path": "dummy_data/train/syn0263.png", "vendor": "CVS Pharmacy", "date": "2024-08-23", "total": "28.45", "label": {"is_forged": 0}}
+{"id": "syn0264", "image_path": "dummy_data/train/syn0264.png", "vendor": "Nandos", "date": "2024-11-17", "total": "28.87", "label": {"is_forged": 0}}
+{"id": "syn0265", "image_path": "dummy_data/train/syn0265.png", "vendor": "Generic Shop", "date": "2023-03-04", "total": "1.88", "label": {"is_forged": 1}}
+{"id": "syn0266", "image_path": "dummy_data/train/syn0266.png", "vendor": "Subway", "date": "2024-05-08", "total": "5.88", "label": {"is_forged": 0}}
+{"id": "syn0267", "image_path": "dummy_data/train/syn0267.png", "vendor": "Shell Gas", "date": "2023-12-25", "total": "65.77", "label": {"is_forged": 0}}
+{"id": "syn0268", "image_path": "dummy_data/train/syn0268.png", "vendor": "Nandos", "date": "2023-10-13", "total": "16.04", "label": {"is_forged": 0}}
+{"id": "syn0269", "image_path": "dummy_data/train/syn0269.png", "vendor": "Costa Coffee", "date": "2024-03-15", "total": "8.97", "label": {"is_forged": 0}}
+{"id": "syn0270", "image_path": "dummy_data/train/syn0270.png", "vendor": "Nandos", "date": "2024-09-28", "total": "128.48", "label": {"is_forged": 0}}
+{"id": "syn0271", "image_path": "dummy_data/train/syn0271.png", "vendor": "Tim Hortons", "date": "2024-07-24", "total": "39.34", "label": {"is_forged": 0}}
+{"id": "syn0272", "image_path": "dummy_data/train/syn0272.png", "vendor": "7-Eleven", "date": "2024-11-04", "total": "32.87", "label": {"is_forged": 0}}
+{"id": "syn0273", "image_path": "dummy_data/train/syn0273.png", "vendor": "Zara", "date": "2023-07-04", "total": "10.89", "label": {"is_forged": 0}}
+{"id": "syn0274", "image_path": "dummy_data/train/syn0274.png", "vendor": "BP Station", "date": "2023-11-13", "total": "42.46", "label": {"is_forged": 0}}
+{"id": "syn0275", "image_path": "dummy_data/train/syn0275.png", "vendor": "Lulu Hypermarket", "date": "2023-07-05", "total": "15.13", "label": {"is_forged": 0}}
+{"id": "syn0276", "image_path": "dummy_data/train/syn0276.png", "vendor": null, "date": "2024-10-12", "total": "1280.94", "label": {"is_forged": 1}}
+{"id": "syn0277", "image_path": "dummy_data/train/syn0277.png", "vendor": "Subway", "date": "2024-04-09", "total": "16.52", "label": {"is_forged": 0}}
+{"id": "syn0278", "image_path": "dummy_data/train/syn0278.png", "vendor": "Lulu Hypermarket", "date": "2023-11-16", "total": "5.99", "label": {"is_forged": 0}}
+{"id": "syn0279", "image_path": "dummy_data/train/syn0279.png", "vendor": "Noon Express", "date": "2024-08-04", "total": "13.72", "label": {"is_forged": 0}}
+{"id": "syn0280", "image_path": "dummy_data/train/syn0280.png", "vendor": "Tim Hortons", "date": "2023-02-23", "total": "3.11", "label": {"is_forged": 0}}
+{"id": "syn0281", "image_path": "dummy_data/train/syn0281.png", "vendor": "CVS Pharmacy", "date": "2024-09-24", "total": "5.99", "label": {"is_forged": 0}}
+{"id": "syn0282", "image_path": "dummy_data/train/syn0282.png", "vendor": "McDonald's", "date": "2023-10-06", "total": "39.23", "label": {"is_forged": 0}}
+{"id": "syn0283", "image_path": "dummy_data/train/syn0283.png", "vendor": "Pizza Hut", "date": null, "total": "1330.45", "label": {"is_forged": 1}}
+{"id": "syn0284", "image_path": "dummy_data/train/syn0284.png", "vendor": "Pizza Hut", "date": "2024-11-25", "total": "4.11", "label": {"is_forged": 0}}
+{"id": "syn0285", "image_path": "dummy_data/train/syn0285.png", "vendor": "H&M", "date": "2024-06-23", "total": "31.47", "label": {"is_forged": 0}}
+{"id": "syn0286", "image_path": "dummy_data/train/syn0286.png", "vendor": "H&M", "date": "2023-08-14", "total": "12.91", "label": {"is_forged": 0}}
+{"id": "syn0287", "image_path": "dummy_data/train/syn0287.png", "vendor": "Tim Hortons", "date": "2023-08-05", "total": "200.0", "label": {"is_forged": 1}}
+{"id": "syn0288", "image_path": "dummy_data/train/syn0288.png", "vendor": null, "date": null, "total": "100.0", "label": {"is_forged": 1}}
+{"id": "syn0289", "image_path": "dummy_data/train/syn0289.png", "vendor": "Zara", "date": null, "total": "50.0", "label": {"is_forged": 1}}
+{"id": "syn0290", "image_path": "dummy_data/train/syn0290.png", "vendor": "Noon Express", "date": "2023-01-20", "total": "1.51", "label": {"is_forged": 0}}
+{"id": "syn0291", "image_path": "dummy_data/train/syn0291.png", "vendor": "Walmart", "date": "2024-12-27", "total": "1.16", "label": {"is_forged": 1}}
+{"id": "syn0292", "image_path": "dummy_data/train/syn0292.png", "vendor": "Carrefour", "date": "2023-01-22", "total": "4.28", "label": {"is_forged": 0}}
+{"id": "syn0293", "image_path": "dummy_data/train/syn0293.png", "vendor": null, "date": "2024-12-07", "total": "50.0", "label": {"is_forged": 1}}
+{"id": "syn0294", "image_path": "dummy_data/train/syn0294.png", "vendor": "Cash Only Store", "date": null, "total": "1000.0", "label": {"is_forged": 1}}
+{"id": "syn0295", "image_path": "dummy_data/train/syn0295.png", "vendor": "Carrefour", "date": "2023-08-15", "total": "47.94", "label": {"is_forged": 0}}
+{"id": "syn0296", "image_path": "dummy_data/train/syn0296.png", "vendor": "Lulu Hypermarket", "date": "2023-03-20", "total": "52.85", "label": {"is_forged": 0}}
+{"id": "syn0297", "image_path": "dummy_data/train/syn0297.png", "vendor": "Talabat", "date": "2024-06-27", "total": "35.11", "label": {"is_forged": 0}}
+{"id": "syn0298", "image_path": "dummy_data/train/syn0298.png", "vendor": "Careem", "date": "2024-10-22", "total": "250.0", "label": {"is_forged": 1}}
+{"id": "syn0299", "image_path": "dummy_data/train/syn0299.png", "vendor": "XYZ Store", "date": null, "total": "200.0", "label": {"is_forged": 1}}
