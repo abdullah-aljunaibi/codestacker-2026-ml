@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import logging
+import os
+
+from openai import OpenAI
 
 from src.config import DEFAULT_CONFIG
 from src.types import AnalysisResult
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -75,6 +81,22 @@ def summarize_document(
 
 
 def generate_anomaly_summary(analysis: AnalysisResult) -> str:
+    """Generate a human-readable forensic summary with deterministic fallback."""
+    summary, _method = generate_anomaly_summary_with_method(analysis)
+    return summary
+
+
+def generate_anomaly_summary_with_method(analysis: AnalysisResult) -> tuple[str, str]:
+    """Return the anomaly summary and generation method for UI/debug use."""
+    llm_summary = _generate_llm_summary(analysis)
+    if llm_summary:
+        return llm_summary, "llm"
+
+    LOGGER.info("Falling back to rule-based anomaly summary generation")
+    return _generate_nlg_summary(analysis), "nlg"
+
+
+def _generate_nlg_summary(analysis: AnalysisResult) -> str:
     """Generate a deterministic, human-readable forensic summary."""
     features = analysis.anomaly.feature_values or {}
     extraction = analysis.extraction
@@ -102,6 +124,108 @@ def generate_anomaly_summary(analysis: AnalysisResult) -> str:
     evidence_text = _join_phrases(evidence)
     closing = _closing_sentence(analysis, missing_fields, field_anomalies)
     return f"{status_text} {lead} {evidence_text}. {closing}"
+
+
+def _generate_llm_summary(analysis: AnalysisResult) -> str | None:
+    """Generate a short forensic summary via an OpenAI-compatible endpoint."""
+    base_url = os.getenv("DOCFUSION_LLM_BASE_URL", "http://localhost:11434/v1")
+    model = os.getenv("DOCFUSION_LLM_MODEL", "mistral")
+    api_key = os.getenv("DOCFUSION_LLM_API_KEY", "ollama")
+
+    try:
+        client = OpenAI(api_key=api_key, base_url=base_url, timeout=5.0)
+        response = client.chat.completions.create(
+            model=model,
+            temperature=0,
+            max_tokens=140,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a forensic document analysis assistant. "
+                        "Write a concise 2-3 sentence summary of receipt tampering risk. "
+                        "Ground the summary only in the provided analysis and avoid bullet points."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": _build_llm_prompt(analysis),
+                },
+            ],
+        )
+    except Exception:
+        return None
+
+    content = response.choices[0].message.content if response.choices else None
+    if isinstance(content, str):
+        cleaned = " ".join(content.split())
+        return cleaned or None
+    return None
+
+
+def _build_llm_prompt(analysis: AnalysisResult) -> str:
+    extraction = analysis.extraction
+    features = analysis.anomaly.feature_values or {}
+    feature_items = _select_prompt_features(features)
+    reasons = list(analysis.anomaly.reasons)
+
+    return "\n".join(
+        [
+            "Prepare a forensic document analysis summary for this receipt.",
+            "Requirements:",
+            "- Write exactly 2 or 3 sentences.",
+            "- Mention whether the receipt appears genuine or suspicious.",
+            "- Reference the anomaly score and the strongest evidence.",
+            "- If fields are missing or low-confidence, mention that briefly.",
+            "",
+            f"Anomaly score: {float(analysis.anomaly.score):.4f}",
+            f"Decision threshold: {float(DEFAULT_CONFIG.training.anomaly_threshold):.4f}",
+            f"Is forged: {bool(analysis.anomaly.is_forged)}",
+            f"Reasons: {', '.join(reasons) if reasons else 'None'}",
+            "Extraction results:",
+            f"- Vendor: value={extraction.vendor.value or 'missing'}, confidence={extraction.vendor.confidence:.3f}",
+            f"- Date: value={extraction.date.value or 'missing'}, confidence={extraction.date.confidence:.3f}",
+            f"- Total: value={extraction.total.value or 'missing'}, confidence={extraction.total.confidence:.3f}",
+            f"OCR text present: {bool(analysis.ocr_text.strip())}",
+            f"Page count: {analysis.page_count}",
+            "Key feature values:",
+            *[f"- {name}: {value}" for name, value in feature_items],
+        ]
+    )
+
+
+def _select_prompt_features(features: dict[str, float]) -> list[tuple[str, str]]:
+    preferred_keys = (
+        "ela_high_ratio",
+        "ela_max",
+        "ocr_low_conf_ratio",
+        "ocr_mean_confidence",
+        "field_conflict_count",
+        "consistency_risk",
+        "amount_zscore",
+        "amount_iqr_gap",
+        "field_ela_vendor",
+        "field_conf_vendor",
+        "field_ela_date",
+        "field_conf_date",
+        "field_ela_total",
+        "field_conf_total",
+        "field_present_vendor",
+        "field_present_date",
+        "field_present_total",
+    )
+    items: list[tuple[str, str]] = []
+    for key in preferred_keys:
+        if key in features:
+            items.append((key, f"{float(features[key]):.4f}"))
+    if not items:
+        for key in sorted(features):
+            items.append((key, f"{float(features[key]):.4f}"))
+            if len(items) >= 12:
+                break
+    return items
+
+
 def _collect_evidence(
     features: dict[str, float],
     missing_fields: list[str],
