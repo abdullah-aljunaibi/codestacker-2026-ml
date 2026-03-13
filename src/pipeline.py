@@ -43,11 +43,12 @@ def analyze_document(
         anomaly=AnomalyResult(score=0.0, is_forged=0),
         page_count=len(pages),
         page_sizes=tuple(page.image.size for page in pages),
+        page_images=tuple(page.image.copy() for page in pages),
         debug={},
     )
 
     stats = model_bundle.stats if model_bundle is not None else None
-    feature_values, vector = build_feature_vector(provisional, stats)
+    feature_values, vector = build_feature_vector(provisional, stats, page_images=provisional.page_images)
     if model_bundle and model_bundle.anomaly_model_data and model_bundle.anomaly_model_data.get("model") is not None:
         model = model_bundle.anomaly_model_data["model"]
         score = float(model.predict_proba(np.asarray([vector], dtype=np.float64))[0][1])
@@ -62,7 +63,7 @@ def analyze_document(
         score, reasons = heuristic_score(feature_values)
         threshold = DEFAULT_CONFIG.training.anomaly_threshold
 
-    suspicious_regions = localize_suspicious_regions(document_path, tuple(words))
+    suspicious_regions = localize_suspicious_regions(provisional.page_images, tuple(words))
     return AnalysisResult(
         document_path=document_path,
         ocr_text=ocr_text,
@@ -78,6 +79,7 @@ def analyze_document(
         ),
         page_count=len(pages),
         page_sizes=tuple(page.image.size for page in pages),
+        page_images=provisional.page_images,
         debug={"vector_length": len(vector)} if debug else {},
     )
 

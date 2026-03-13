@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import pickle
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import numpy as np
 from PIL import Image, ImageFilter
@@ -61,11 +61,23 @@ TEXT_FEATURE_KEYS = [
 ]
 
 
-def _extract_base_image_features(image_path: str) -> dict[str, float]:
+def _load_gray_image(image_or_path: Image.Image | str | Path) -> Image.Image | None:
+    if isinstance(image_or_path, Image.Image):
+        try:
+            return image_or_path.convert("L")
+        except Exception:
+            return None
+
     try:
-        with Image.open(image_path) as source:
-            gray = source.convert("L")
+        with Image.open(image_or_path) as source:
+            return source.convert("L")
     except Exception:
+        return None
+
+
+def _extract_base_image_features(image_or_path: Image.Image | str | Path) -> dict[str, float]:
+    gray = _load_gray_image(image_or_path)
+    if gray is None:
         return _empty_base_image_features()
 
     width, height = gray.size
@@ -115,10 +127,25 @@ def _extract_base_image_features(image_path: str) -> dict[str, float]:
     }
 
 
-def extract_image_features(image_path: str) -> dict[str, float]:
-    features = _extract_base_image_features(image_path)
-    features.update(extract_ela_features(image_path))
+def extract_image_features(image_or_path: Image.Image | str | Path) -> dict[str, float]:
+    features = _extract_base_image_features(image_or_path)
+    features.update(extract_ela_features(image_or_path))
     return features
+
+
+def _aggregate_page_feature_sets(page_feature_sets: Iterable[dict[str, float]]) -> dict[str, float]:
+    feature_sets = list(page_feature_sets)
+    if not feature_sets:
+        return dict.fromkeys(FEATURE_KEYS, 0.0)
+
+    aggregated: dict[str, float] = {}
+    for key in FEATURE_KEYS:
+        values = [float(features.get(key, 0.0)) for features in feature_sets]
+        if key in {"ela_max", "ela_high_ratio"}:
+            aggregated[key] = float(np.max(values))
+        else:
+            aggregated[key] = float(np.mean(values))
+    return aggregated
 
 
 def extract_text_features(ocr_text: str) -> dict[str, float]:
@@ -165,9 +192,14 @@ def extra_features_to_vector(features: dict[str, float]) -> list[float]:
 def build_feature_vector(
     analysis: AnalysisResult,
     stats: dict[str, Any] | None,
+    page_images: Iterable[Image.Image] | None = None,
 ) -> tuple[dict[str, float], list[float]]:
     amount = parse_amount(analysis.extraction.total.value) or 0.0
-    image_features = extract_image_features(analysis.document_path)
+    pages = tuple(page_images) if page_images is not None else analysis.page_images
+    if pages:
+        image_features = _aggregate_page_feature_sets(extract_image_features(page) for page in pages)
+    else:
+        image_features = extract_image_features(analysis.document_path)
     text_features = extract_text_features(analysis.ocr_text)
     consistency_features = extract_consistency_features(
         analysis.ocr_text,
@@ -217,16 +249,23 @@ def build_feature_vector(
 
 
 def localize_suspicious_regions(
-    image_path: str,
+    page_images: Iterable[Image.Image] | Image.Image | str | Path,
     words: tuple[OCRWord, ...],
     max_regions: int = 6,
 ) -> tuple[Box, ...]:
     regions: list[Box] = []
-    ela = compute_ela_array(image_path)
-    if ela.size:
+    if isinstance(page_images, (str, Path, Image.Image)):
+        pages = (page_images,)
+    else:
+        pages = tuple(page_images)
+
+    block_scores: list[tuple[float, Box]] = []
+    for page_index, page_image in enumerate(pages):
+        ela = compute_ela_array(page_image)
+        if not ela.size:
+            continue
         height, width = ela.shape[:2]
         block = max(24, min(height, width) // 10)
-        block_scores: list[tuple[float, Box]] = []
         for top in range(0, height, block):
             for left in range(0, width, block):
                 patch = ela[top : top + block, left : left + block]
@@ -242,12 +281,13 @@ def localize_suspicious_regions(
                                 top=top,
                                 right=min(left + block, width),
                                 bottom=min(top + block, height),
-                                page_index=0,
+                                page_index=page_index,
                             ),
                         )
                     )
-        block_scores.sort(key=lambda item: item[0], reverse=True)
-        regions.extend(box for _, box in block_scores[: max_regions // 2])
+
+    block_scores.sort(key=lambda item: item[0], reverse=True)
+    regions.extend(box for _, box in block_scores[: max_regions // 2])
 
     low_conf_words = [
         word
@@ -364,7 +404,7 @@ def train_anomaly_model(records: list[dict[str, Any]], train_dir: str, model_dir
     X_rows: list[list[float]] = []
     y_rows: list[int] = []
     for analysis, label in analyses:
-        _, vector = build_feature_vector(analysis, stats)
+        _, vector = build_feature_vector(analysis, stats, page_images=analysis.page_images)
         X_rows.append(vector)
         y_rows.append(label)
 

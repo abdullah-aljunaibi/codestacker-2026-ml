@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageChops
@@ -21,12 +22,24 @@ def _empty_ela_features() -> dict[str, float]:
 ELA_FEATURE_KEYS = list(_empty_ela_features().keys())
 
 
-def compute_ela_array(image_path: str, quality: int = 90) -> np.ndarray:
-    """Return the grayscale ELA map for localization."""
+def _load_rgb_image(image_or_path: Image.Image | str | Path) -> Image.Image | None:
+    if isinstance(image_or_path, Image.Image):
+        try:
+            return image_or_path.convert("RGB")
+        except Exception:
+            return None
+
     try:
-        with Image.open(image_path) as source:
-            rgb = source.convert("RGB")
+        with Image.open(image_or_path) as source:
+            return source.convert("RGB")
     except Exception:
+        return None
+
+
+def compute_ela_array(image_or_path: Image.Image | str | Path, quality: int = 90) -> np.ndarray:
+    """Return the grayscale ELA map for localization."""
+    rgb = _load_rgb_image(image_or_path)
+    if rgb is None:
         return np.zeros((1, 1), dtype=np.float64)
 
     buffer = BytesIO()
@@ -41,9 +54,9 @@ def compute_ela_array(image_path: str, quality: int = 90) -> np.ndarray:
     return np.asarray(diff.convert("L"), dtype=np.float64)
 
 
-def extract_ela_features(image_path: str, quality: int = 90) -> dict[str, float]:
+def extract_ela_features(image_or_path: Image.Image | str | Path, quality: int = 90) -> dict[str, float]:
     """Compute compact ELA statistics from a document image."""
-    ela = compute_ela_array(image_path, quality=quality)
+    ela = compute_ela_array(image_or_path, quality=quality)
     if ela.size == 0:
         return _empty_ela_features()
 

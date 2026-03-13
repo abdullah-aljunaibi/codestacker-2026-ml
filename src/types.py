@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from PIL import Image
+
 
 @dataclass(frozen=True)
 class Box:
@@ -121,6 +123,7 @@ class AnalysisResult:
     anomaly: AnomalyResult
     page_count: int
     page_sizes: tuple[tuple[int, int], ...]
+    page_images: tuple[Image.Image, ...] = field(default_factory=tuple)
     debug: dict[str, Any] = field(default_factory=dict)
 
 
