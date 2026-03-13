@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.config import DEFAULT_CONFIG
 from src.document_io import load_document_pages
 from src.pipeline import analyze_document
+from src.summary import generate_anomaly_summary
 from src.types import Box, ModelBundle
 
 
@@ -113,6 +114,8 @@ def render_analysis(name: str, document_path: str, bundle: ModelBundle | None) -
                 "reasons": list(analysis.anomaly.reasons),
             }
         )
+        st.markdown("**Summary**")
+        st.write(generate_anomaly_summary(analysis))
         st.markdown("**Document**")
         st.write(
             {

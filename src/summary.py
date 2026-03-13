@@ -1,8 +1,11 @@
-"""Compact summary helpers for extraction and anomaly outputs."""
+"""Compact summary helpers for extraction, anomaly outputs, and NLG summaries."""
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+
+from src.config import DEFAULT_CONFIG
+from src.types import AnalysisResult
 
 
 @dataclass(frozen=True)
@@ -69,3 +72,157 @@ def summarize_document(
         extraction=summarize_extraction(fields),
         anomaly=summarize_anomaly(anomaly_score, threshold, reasons),
     )
+
+
+def generate_anomaly_summary(analysis: AnalysisResult) -> str:
+    """Generate a deterministic, human-readable forensic summary."""
+    features = analysis.anomaly.feature_values or {}
+    extraction = analysis.extraction
+    score = float(analysis.anomaly.score)
+    threshold = float(DEFAULT_CONFIG.training.anomaly_threshold)
+
+    missing_fields = [
+        field_name
+        for field_name in ("vendor", "date", "total")
+        if not getattr(extraction, field_name).value
+    ]
+    field_anomalies = _field_local_anomalies(features)
+    evidence = _collect_evidence(features, missing_fields, field_anomalies)
+    qualifier = _confidence_qualifier(score, threshold, len(evidence))
+    status_text = _status_sentence(analysis, qualifier, evidence, score, threshold)
+
+    if not evidence:
+        if analysis.anomaly.is_forged:
+            follow_up = "The current indicators are limited, but the combined anomaly score warrants manual review."
+        else:
+            follow_up = "No material irregularities were identified in the extracted text, field structure, or image characteristics."
+        return f"{status_text} {follow_up}"
+
+    lead = _lead_sentence(evidence, score, threshold)
+    evidence_text = _join_phrases(evidence)
+    closing = _closing_sentence(analysis, missing_fields, field_anomalies)
+    return f"{status_text} {lead} {evidence_text}. {closing}"
+def _collect_evidence(
+    features: dict[str, float],
+    missing_fields: list[str],
+    field_anomalies: list[str],
+) -> list[str]:
+    evidence: list[str] = []
+
+    if features.get("ela_high_ratio", 0.0) >= 0.12 or features.get("ela_max", 0.0) >= 40.0:
+        evidence.append("Signs of digital manipulation were detected in the image, with elevated high-ELA regions")
+
+    if features.get("ocr_low_conf_ratio", 0.0) >= 0.35 or features.get("ocr_mean_confidence", 1.0) <= 0.55:
+        evidence.append("Text quality appears degraded, suggesting possible tampering or post-processing")
+
+    if missing_fields:
+        evidence.append(f"Key fields are missing ({'/'.join(missing_fields)})")
+
+    if features.get("field_conflict_count", 0.0) >= 1.0 or features.get("consistency_risk", 0.0) >= 0.58:
+        evidence.append("The reported total does not align cleanly with other amount evidence on the document")
+
+    amount_zscore = features.get("amount_zscore", 0.0)
+    amount_iqr_gap = features.get("amount_iqr_gap", 0.0)
+    if amount_zscore >= 2.5 or amount_iqr_gap >= 1.0:
+        evidence.append("The total amount is unusually high or low compared with the learned document distribution")
+
+    for field_name in field_anomalies:
+        evidence.append(f"Suspicious patterns were detected near the {field_name} field")
+
+    return evidence
+
+
+def _field_local_anomalies(features: dict[str, float]) -> list[str]:
+    flagged: list[str] = []
+    for field_name in ("vendor", "date", "total"):
+        local_ela = features.get(f"field_ela_{field_name}", 0.0)
+        local_conf = features.get(f"field_conf_{field_name}", 1.0)
+        present = features.get(f"field_present_{field_name}", 1.0)
+        if present <= 0.0:
+            continue
+        if local_ela >= 18.0 or local_conf <= 0.4:
+            flagged.append(field_name)
+    return flagged
+
+
+def _confidence_qualifier(score: float, threshold: float, evidence_count: int) -> str:
+    if score >= threshold + 0.2 or evidence_count >= 4:
+        return "strongly suggests"
+    if score >= threshold or evidence_count >= 2:
+        return "likely"
+    return "possibly"
+
+
+def _status_sentence(
+    analysis: AnalysisResult,
+    qualifier: str,
+    evidence: list[str],
+    score: float,
+    threshold: float,
+) -> str:
+    suspicious_openers = (
+        "The document appears suspicious",
+        "The receipt shows indicators of possible manipulation",
+        "This document warrants concern for potential tampering",
+    )
+    genuine_openers = (
+        "The document appears genuine",
+        "The receipt is broadly consistent with an untampered document",
+        "No strong signs of forgery are apparent in this document",
+    )
+    variant_index = _variant_index(analysis)
+
+    if analysis.anomaly.is_forged:
+        opener = suspicious_openers[variant_index % len(suspicious_openers)]
+        return f"{opener} and {qualifier} alteration."
+
+    if evidence:
+        opener = genuine_openers[variant_index % len(genuine_openers)]
+        return f"{opener}, although the available signals {qualifier} localized review."
+
+    opener = genuine_openers[variant_index % len(genuine_openers)]
+    margin = max(threshold - score, 0.0)
+    if margin >= 0.15:
+        return f"{opener} with no meaningful anomaly pressure."
+    return f"{opener}, with only limited weak indicators noted."
+
+
+def _lead_sentence(evidence: list[str], score: float, threshold: float) -> str:
+    lead_options = (
+        "This assessment is based on several observable indicators:",
+        "The conclusion is supported by the following findings:",
+        "Key factors informing this assessment include:",
+    )
+    index = (len(evidence) + int(round(score * 10)) + int(round(threshold * 10))) % len(lead_options)
+    return lead_options[index]
+
+
+def _closing_sentence(
+    analysis: AnalysisResult,
+    missing_fields: list[str],
+    field_anomalies: list[str],
+) -> str:
+    if analysis.anomaly.is_forged and field_anomalies:
+        return "Targeted verification of the highlighted fields would be appropriate before accepting the document"
+    if missing_fields:
+        return "The missing field coverage reduces confidence in the document record and should be checked manually"
+    if analysis.anomaly.is_forged:
+        return "Taken together, these indicators support a cautious forensic interpretation"
+    return "Overall, the document structure remains largely coherent despite the noted weak signals"
+
+
+def _join_phrases(parts: list[str]) -> str:
+    if len(parts) == 1:
+        return parts[0]
+    if len(parts) == 2:
+        return f"{parts[0]}, and {parts[1]}"
+    return f"{', '.join(parts[:-1])}, and {parts[-1]}"
+
+
+def _variant_index(analysis: AnalysisResult) -> int:
+    return (
+        int(round(analysis.anomaly.score * 100))
+        + analysis.page_count
+        + len(analysis.anomaly.reasons)
+        + len(analysis.anomaly.suspicious_regions)
+    ) % 7
