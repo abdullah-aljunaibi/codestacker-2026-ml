@@ -378,7 +378,8 @@ def train_anomaly_model(records: list[dict[str, Any]], train_dir: str, model_dir
     set_deterministic_seeds(DEFAULT_CONFIG.training.random_state)
     os.makedirs(model_dir, exist_ok=True)
 
-    analyses: list[tuple[AnalysisResult, int]] = []
+    # Pass 1: analyze documents, collect stats, store lightweight metadata (no page images)
+    analysis_meta: list[tuple[AnalysisResult, int]] = []
     predicted_vendors: set[str] = set()
     predicted_amounts: list[float] = []
 
@@ -386,12 +387,25 @@ def train_anomaly_model(records: list[dict[str, Any]], train_dir: str, model_dir
         image_path = Path(train_dir) / str(record.get("image_path", ""))
         analysis = analyze_document(str(image_path), model_bundle=None, debug=False)
         label = int(record.get("label", {}).get("is_forged", 0))
-        analyses.append((analysis, label))
         if analysis.extraction.vendor.value:
             predicted_vendors.add(analysis.extraction.vendor.value)
         amount = parse_amount(analysis.extraction.total.value)
         if amount is not None:
             predicted_amounts.append(amount)
+        # Drop page_images to free RAM — features were already computed during analyze_document
+        analysis_no_images = AnalysisResult(
+            document_path=analysis.document_path,
+            ocr_text=analysis.ocr_text,
+            words=analysis.words,
+            lines=analysis.lines,
+            extraction=analysis.extraction,
+            anomaly=analysis.anomaly,
+            page_count=analysis.page_count,
+            page_sizes=analysis.page_sizes,
+            page_images=(),
+            debug=analysis.debug,
+        )
+        analysis_meta.append((analysis_no_images, label))
 
     stats = {
         "vendors": sorted(predicted_vendors),
@@ -401,12 +415,18 @@ def train_anomaly_model(records: list[dict[str, Any]], train_dir: str, model_dir
         "amount_q3": float(np.percentile(predicted_amounts, 75)) if predicted_amounts else 0.0,
     }
 
+    # Pass 2: build feature vectors — re-load pages on demand to avoid holding all in RAM
     X_rows: list[list[float]] = []
     y_rows: list[int] = []
-    for analysis, label in analyses:
-        _, vector = build_feature_vector(analysis, stats, page_images=analysis.page_images)
+    for analysis, label in analysis_meta:
+        # Re-load page images for this single document to compute features
+        from src.document_io import load_document_pages
+        pages = load_document_pages(analysis.document_path)
+        page_images = tuple(page.image for page in pages)
+        _, vector = build_feature_vector(analysis, stats, page_images=page_images)
         X_rows.append(vector)
         y_rows.append(label)
+        del pages, page_images  # Free immediately
 
     X = np.asarray(X_rows, dtype=np.float64) if X_rows else np.zeros((0, 0), dtype=np.float64)
     y = np.asarray(y_rows, dtype=np.int64)

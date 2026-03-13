@@ -123,7 +123,7 @@ class AnalysisResult:
     anomaly: AnomalyResult
     page_count: int
     page_sizes: tuple[tuple[int, int], ...]
-    page_images: tuple[Image.Image, ...] = field(default_factory=tuple)
+    page_images: tuple[Image.Image, ...] = field(default_factory=tuple, hash=False, compare=False)
     debug: dict[str, Any] = field(default_factory=dict)
 
 
