@@ -3,21 +3,25 @@
 
 from __future__ import annotations
 
-import argparse
-import math
-import statistics
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import json
+import math
+import pickle
+import statistics
 import time
 import tracemalloc
-from pathlib import Path
 
 from solution import DocFusionSolution
 from src.config import DEFAULT_CONFIG
+from src.data.schema import PredictionRecord
 from src.pipeline import analyze_document
+from src.reproducibility import set_deterministic_seeds
 from src.types import ModelBundle
-
-import json
-import pickle
 
 
 def _percentile(values: list[float], percentile: float) -> float:
@@ -53,6 +57,14 @@ def _directory_size_bytes(path: Path) -> int:
     return total_bytes
 
 
+def _load_model_bundle(model_dir: Path) -> ModelBundle:
+    with (model_dir / DEFAULT_CONFIG.data.stats_file_name).open() as handle:
+        stats = json.load(handle)
+    with (model_dir / DEFAULT_CONFIG.data.anomaly_model_file_name).open("rb") as handle:
+        anomaly_model_data = pickle.load(handle)
+    return ModelBundle(stats=stats, anomaly_model_data=anomaly_model_data)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--inputs", nargs="+")
@@ -80,23 +92,48 @@ def main() -> int:
                 file=sys.stderr,
             )
 
-        tracemalloc.start()
+        set_deterministic_seeds(DEFAULT_CONFIG.training.random_state)
+        model_dir = Path(args.model_dir) if args.model_dir else Path(".")
+        data_path = Path(args.data_dir)
+        out_file = Path(args.out_path)
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        bundle = _load_model_bundle(model_dir)
+
+        durations = []
+        peaks_mb = []
+        started = time.perf_counter()
         try:
-            started = time.perf_counter()
-            DocFusionSolution().predict(
-                model_dir=str(Path(args.model_dir) if args.model_dir else Path(".")),
-                data_dir=args.data_dir,
-                out_path=args.out_path,
-            )
-            duration = time.perf_counter() - started
-            _, peak = tracemalloc.get_traced_memory()
+            with out_file.open("w") as handle:
+                for record in DocFusionSolution._iter_jsonl(data_path / DEFAULT_CONFIG.data.test_file_name):
+                    image_path = data_path / str(record.get("image_path", ""))
+                    tracemalloc.start()
+                    try:
+                        document_started = time.perf_counter()
+                        analysis = analyze_document(str(image_path), model_bundle=bundle, debug=False)
+                        durations.append(time.perf_counter() - document_started)
+                        _, peak = tracemalloc.get_traced_memory()
+                    finally:
+                        tracemalloc.stop()
+
+                    peaks_mb.append(peak / (1024 * 1024))
+                    prediction = PredictionRecord(
+                        id=str(record.get("id", "")),
+                        vendor=analysis.extraction.vendor.value,
+                        date=analysis.extraction.date.value,
+                        total=analysis.extraction.total.value,
+                        is_forged=analysis.anomaly.is_forged,
+                    )
+                    handle.write(prediction.model_dump_json())
+                    handle.write("\n")
         finally:
-            tracemalloc.stop()
+            duration = time.perf_counter() - started
 
         print(f"documents={document_count}")
-        print(f"latency_mean_s={duration:.4f}")
-        print(f"latency_p95_s={duration:.4f}")
-        print(f"peak_memory_mb_mean={peak / (1024 * 1024):.2f}")
+        print(f"latency_total_s={duration:.4f}")
+        if durations:
+            print(f"latency_mean_s={statistics.mean(durations):.4f}")
+            print(f"latency_p95_s={_percentile(durations, 0.95):.4f}")
+            print(f"peak_memory_mb_mean={statistics.mean(peaks_mb):.2f}")
         if args.model_dir:
             artifact_size_bytes = _directory_size_bytes(Path(args.model_dir))
             print(f"artifact_size_bytes={artifact_size_bytes}")
@@ -104,12 +141,7 @@ def main() -> int:
 
     model_bundle = None
     if args.model_dir:
-        model_dir = Path(args.model_dir)
-        with (model_dir / DEFAULT_CONFIG.data.stats_file_name).open() as handle:
-            stats = json.load(handle)
-        with (model_dir / DEFAULT_CONFIG.data.anomaly_model_file_name).open("rb") as handle:
-            anomaly_model_data = pickle.load(handle)
-        model_bundle = ModelBundle(stats=stats, anomaly_model_data=anomaly_model_data)
+        model_bundle = _load_model_bundle(Path(args.model_dir))
 
     durations = []
     peaks_mb = []

@@ -6,7 +6,7 @@
 
 **Rihal CodeStacker 2026 — ML Track**
 
-[![Python 3.13+](https://img.shields.io/badge/Python-3.13%2B-3776AB?logo=python&logoColor=white)](https://python.org)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://python.org)
 [![Tesseract OCR](https://img.shields.io/badge/OCR-Tesseract-4285F4?logo=google&logoColor=white)](https://github.com/tesseract-ocr/tesseract)
 [![scikit-learn](https://img.shields.io/badge/ML-scikit--learn-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
@@ -58,7 +58,7 @@ DocFusion answers both — as a single, unified pipeline that runs fast enough f
 
 > *"The simplest solution that works is the best solution."*
 
-DocFusion is an **OCR-first pipeline** — no heavy vision transformers, no GPU dependencies, no cloud API calls. Every document flows through the same engine whether it's invoked by the evaluation harness or the interactive web UI:
+DocFusion is an **OCR-first pipeline** — no heavy vision transformers, no GPU dependencies, no cloud API calls for core analysis. Every document flows through the same engine whether it's invoked by the evaluation harness or the interactive web UI:
 
 ```
 Document → Load → Preprocess → OCR → Extract Fields → Detect Anomalies → Localize → Summarize
@@ -279,7 +279,7 @@ Benchmark run (scripts/benchmark.py):
 
 ### Prerequisites
 
-- **Python 3.13+**
+- **Python 3.11+**
 - **Tesseract OCR** installed and on PATH
 
 ```bash
@@ -351,11 +351,11 @@ docker run --rm -v $(pwd)/data:/app/data docfusion python solution.py
 docker run --rm -p 8501:8501 docfusion streamlit run app.py --server.address 0.0.0.0
 ```
 
-The Dockerfile uses `python:3.13-slim` with Tesseract installed via apt — resulting in a lean, production-ready image.
+The Dockerfile uses `python:3.11-slim` with Tesseract installed via apt — resulting in a lean, production-ready image.
 
 ```dockerfile
 # Highlights from Docker setup
-FROM python:3.13-slim
+FROM python:3.11-slim
 RUN apt-get update && apt-get install -y tesseract-ocr && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -391,7 +391,7 @@ Then open [http://localhost:8501](http://localhost:8501).
 ## Testing
 
 ```bash
-# Run all 18 tests
+# Run all 28 tests
 python -m pytest tests/ -v
 
 # Run specific test categories
@@ -427,7 +427,7 @@ codestacker-2026-ml/
 │
 ├── solution.py              # 🎯 Harness entry point (DocFusionSolution class)
 ├── app.py                   # 🌐 Streamlit Web UI
-├── Dockerfile               # 🐳 Container (Python 3.13-slim + Tesseract)
+├── Dockerfile               # 🐳 Container (Python 3.11-slim + Tesseract)
 ├── requirements.txt         # 📦 Python dependencies
 ├── check_submission.py      # ✅ Determinism verification
 │
@@ -449,7 +449,7 @@ codestacker-2026-ml/
 │   └── evaluate_local.py    # 📊 Local extraction + anomaly evaluation
 │
 ├── notebooks/               # 📓 EDA, extraction, anomaly analysis
-├── tests/                   # 🧪 18 regression tests
+├── tests/                   # 🧪 28 regression tests
 ├── models/                  # 🤖 Trained GradientBoosting artifact
 └── data/                    # 📁 Sample data
 ```
