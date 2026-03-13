@@ -532,9 +532,10 @@ def localize_suspicious_regions(
     else:
         pages = tuple(page_images)
 
+    ela_pages = tuple(compute_ela_array(page) for page in pages)
+
     block_scores: list[tuple[float, Box]] = []
-    for page_index, page_image in enumerate(pages):
-        ela = compute_ela_array(page_image)
+    for page_index, ela in enumerate(ela_pages):
         if not ela.size:
             continue
         height, width = ela.shape[:2]
@@ -563,7 +564,6 @@ def localize_suspicious_regions(
     regions.extend(box for _, box in block_scores[: max_regions // 2])
 
     if extraction is not None and pages:
-        ela_pages = tuple(compute_ela_array(page) for page in pages)
         field_boxes: list[tuple[float, Box]] = []
         for field_name in ("vendor", "date", "total"):
             field = getattr(extraction, field_name)
@@ -604,9 +604,12 @@ def localize_suspicious_regions(
                 high_scoring.append((normalized, score, box))
 
             if len(high_scoring) > 1:
-                ambiguous = [entry for entry in high_scoring if entry[0] != predicted_total]
-                if not ambiguous:
+                if predicted_total is None:
                     ambiguous = high_scoring[1:]
+                else:
+                    ambiguous = [entry for entry in high_scoring if entry[0] != predicted_total]
+                    if not ambiguous:
+                        ambiguous = high_scoring[1:]
                 for _, _, box in ambiguous:
                     if len(regions) >= max_regions:
                         break

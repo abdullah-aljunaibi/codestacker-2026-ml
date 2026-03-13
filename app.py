@@ -66,7 +66,10 @@ def render_analysis(name: str, document_path: str, bundle: ModelBundle | None) -
             format_func=lambda index: f"Page {index + 1}",
             key=f"page-selector-{name}-{document_path}",
         )
-    page = next(page for page in pages if page.page_index == selected_page_index)
+    page = next(
+        (p for p in pages if p.page_index == selected_page_index),
+        pages[0],
+    )
 
     field_boxes = [
         (field.box, "#0f766e", f"{field.name}: {field.value or 'n/a'}")
