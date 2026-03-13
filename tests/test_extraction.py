@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from src.extractor import extract_date, extract_fields, extract_total, normalize_amount
+from src.extractor import AMOUNT_REGEX, extract_date, extract_fields, extract_total, normalize_amount
 from src.ocr import OCRResult
 from src.types import Box, OCRLine, OCRWord
 
@@ -17,6 +17,27 @@ class ExtractionTests(unittest.TestCase):
     def test_extract_total_prefers_total_keyword_and_normalizes(self) -> None:
         text = "Subtotal 10.00\nTOTAL: RM 1,234.50\nCash 1300.00"
         self.assertEqual(extract_total(text), "1234.50")
+
+    def test_amount_regex_does_not_match_isolated_single_digit(self) -> None:
+        self.assertFalse(AMOUNT_REGEX.search("Qty 7"))
+        self.assertIsNotNone(AMOUNT_REGEX.search("Total 10"))
+        self.assertIsNotNone(AMOUNT_REGEX.search("Total 7.5"))
+
+    def test_extract_total_rejects_date_like_candidates(self) -> None:
+        text = "\n".join(
+            (
+                "Receipt Date 03/04/2024",
+                "Invoice No. 12345678",
+                "Subtotal 10.00",
+                "Tax 0.80",
+                "Amount Due 10.80",
+            )
+        )
+        self.assertEqual(extract_total(text), "10.80")
+
+    def test_extract_date_prefers_day_first_for_ambiguous_numeric_formats(self) -> None:
+        self.assertEqual(extract_date("Receipt Date: 03/04/2024"), "2024-04-03")
+        self.assertEqual(extract_date("Txn date 11/12/24"), "2024-12-11")
 
     def test_normalize_amount_handles_decimal_comma_and_thousands(self) -> None:
         self.assertEqual(normalize_amount("RM 123,45"), "123.45")

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Iterable
 
 from src.ocr import OCRResult, extract_ocr, preprocess_image as preprocess_ocr_image
@@ -57,7 +59,10 @@ POSITIVE_TOTAL_TERMS = (
     "total due",
     "amount due",
     "net total",
+    "net amount",
     "balance due",
+    "pay",
+    "payment",
     "total",
 )
 NEGATIVE_TOTAL_TERMS = (
@@ -76,8 +81,16 @@ NEGATIVE_TOTAL_TERMS = (
     "master",
     "rounding",
     "discount",
+    "tendered",
+    "quantity",
     "qty",
     "item",
+    "no.",
+    "number",
+    "tel",
+    "phone",
+    "fax",
+    "date",
 )
 VENDOR_STOP_TERMS = {
     "receipt",
@@ -93,7 +106,49 @@ VENDOR_STOP_TERMS = {
     "change",
     "cash",
 }
-AMOUNT_REGEX = re.compile(r"(?:rm|usd|eur|aed|\$)?\s*[-+]?\d[\d., ]*\d|\d", re.IGNORECASE)
+DATE_CONTEXT_TERMS = (
+    "date",
+    "issued",
+    "invoice",
+    "txn",
+    "transaction",
+    "receipt date",
+    "printed",
+    "time",
+)
+AMOUNT_REGEX = re.compile(
+    r"(?:rm|usd|eur|aed|\$)?\s*[-+]?(?:\d[\d., ]*\d|\d*[.,]\d{1,2})",
+    re.IGNORECASE,
+)
+TIME_REGEX = re.compile(r"\b\d{1,2}:\d{2}(?::\d{2})?\b")
+PHONE_LIKE_REGEX = re.compile(r"^\+?\d[\d\s().-]{6,}\d$")
+INVOICE_ID_REGEX = re.compile(r"(?<!\d)\d{7,}(?!\d)")
+VENDOR_PRIOR_COUNTS = {}
+for _prior_path in (
+    Path(__file__).resolve().parents[1] / "dummy_data" / "train" / "train.jsonl",
+    Path(__file__).resolve().parents[1] / "data" / "synthetic_train.jsonl",
+):
+    if not _prior_path.exists():
+        continue
+    try:
+        with _prior_path.open() as handle:
+            for raw_line in handle:
+                try:
+                    payload = json.loads(raw_line)
+                except json.JSONDecodeError:
+                    continue
+                vendor = (
+                    payload.get("vendor")
+                    or payload.get("fields", {}).get("vendor")
+                    or ""
+                ).strip()
+                if vendor:
+                    normalized_vendor = re.sub(r"\s+", " ", vendor.lower())
+                    VENDOR_PRIOR_COUNTS[normalized_vendor] = (
+                        VENDOR_PRIOR_COUNTS.get(normalized_vendor, 0) + 1
+                    )
+    except OSError:
+        continue
 
 
 @dataclass(frozen=True)
@@ -222,27 +277,49 @@ def _predict_vendor(lines: tuple[OCRLine, ...]) -> _Candidate:
         return best
 
     max_top = max((line.box.bottom for line in lines), default=1)
+    min_left = min((line.box.left for line in lines), default=0)
+    max_right = max((line.box.right for line in lines), default=1)
+    page_width = max(max_right - min_left, 1)
+    page_center = min_left + page_width / 2.0
     for index, line in enumerate(lines[:8]):
         text = line.text.strip()
         if not text:
             continue
         lower = text.lower()
+        compact_lower = re.sub(r"\s+", " ", lower)
         score = 0.0
         if line.box.top <= max_top * 0.35:
             score += 2.0
         score += max(0.0, 1.2 - 0.18 * index)
+        if index < 3:
+            score += 0.5
         if len(text) >= 4:
             score += 0.5
         if len(text.split()) <= 6:
             score += 0.4
-        if any(char.isdigit() for char in text):
+        alpha_count = sum(char.isalpha() for char in text)
+        digit_count = sum(char.isdigit() for char in text)
+        alpha_ratio = alpha_count / max(len([char for char in text if not char.isspace()]), 1)
+        digit_ratio = digit_count / max(len([char for char in text if not char.isspace()]), 1)
+        if alpha_ratio >= 0.65:
+            score += 0.5
+        elif alpha_ratio < 0.45:
             score -= 0.8
+        if digit_ratio > 0.30:
+            score -= 1.4
+        elif digit_count:
+            score -= 0.6
         if any(term in lower for term in VENDOR_STOP_TERMS):
             score -= 1.5
         if re.fullmatch(r"[\W\d_]+", text):
             score -= 1.0
         if line.confidence >= 75:
             score += 0.4
+        line_center = (line.box.left + line.box.right) / 2.0
+        centeredness = 1.0 - min(abs(line_center - page_center) / (page_width / 2.0), 1.0)
+        score += centeredness * 0.8
+        if compact_lower in VENDOR_PRIOR_COUNTS:
+            score += min(1.6, 0.5 + 0.08 * VENDOR_PRIOR_COUNTS[compact_lower])
         if score > best.score:
             best = _Candidate(text, score, line.box, text, line.page_index)
     if best.score < 1.0:
@@ -254,13 +331,21 @@ def _predict_date(lines: tuple[OCRLine, ...]) -> _Candidate:
     best = _Candidate(value="", score=-1.0, box=None)
     for line in lines:
         lower = line.text.lower()
-        context_bonus = 0.5 if any(token in lower for token in ("date", "issued", "invoice")) else 0.0
+        normalized_lower = re.sub(r"\s+", " ", lower)
+        context_bonus = 0.0
+        if any(token in normalized_lower for token in DATE_CONTEXT_TERMS):
+            context_bonus += 0.6
+        if any(token in normalized_lower for token in ("receipt date", "transaction", "txn")):
+            context_bonus += 0.2
+        has_timestamp = bool(TIME_REGEX.search(line.text))
         for pattern in DATE_REGEXES:
             for match in pattern.finditer(line.text):
                 normalized, ambiguous = _normalize_date_candidate(match.group(0))
                 if normalized is None:
                     continue
                 score = 1.2 + context_bonus + (0.4 if not ambiguous else -0.2)
+                if has_timestamp:
+                    score -= 0.7
                 if line.confidence >= 70:
                     score += 0.3
                 if score > best.score:
@@ -272,6 +357,11 @@ def _predict_date(lines: tuple[OCRLine, ...]) -> _Candidate:
 
 def _predict_total(lines: tuple[OCRLine, ...]) -> _Candidate:
     best = _Candidate(value="", score=-1.0, box=None)
+    if not lines:
+        return best
+    max_bottom = max((line.box.bottom for line in lines), default=1)
+    subtotal_candidates = []
+    tax_candidates = []
     for index, line in enumerate(lines):
         lower = re.sub(r"\s+", " ", line.text.lower()).strip()
         amount_tokens = [match.group(0) for match in AMOUNT_REGEX.finditer(line.text)]
@@ -285,14 +375,27 @@ def _predict_total(lines: tuple[OCRLine, ...]) -> _Candidate:
         for term in NEGATIVE_TOTAL_TERMS:
             if term in lower:
                 line_score -= 1.4
+        line_midpoint = (line.box.top + line.box.bottom) / 2.0
+        vertical_ratio = line_midpoint / max(max_bottom, 1)
+        if vertical_ratio >= 0.60:
+            line_score += 0.9
+        elif vertical_ratio >= 0.50:
+            line_score += 0.4
         if index >= max(0, len(lines) - 4):
-            line_score += 0.3
+            line_score += 0.4
 
+        normalized_amounts = []
         for token in amount_tokens:
             normalized = _normalize_amount_token(token)
             if normalized is None:
                 continue
-            amount = float(normalized)
+            normalized_amounts.append((token, normalized, float(normalized)))
+        if any(term in lower for term in ("subtotal", "sub total")):
+            subtotal_candidates.extend(amount for _, _, amount in normalized_amounts)
+        if any(term in lower for term in ("tax", "vat", "gst", "sst", "service")):
+            tax_candidates.extend(amount for _, _, amount in normalized_amounts)
+
+        for token, normalized, amount in normalized_amounts:
             score = line_score
             if amount > 0:
                 score += 0.8
@@ -302,8 +405,30 @@ def _predict_total(lines: tuple[OCRLine, ...]) -> _Candidate:
                 score += 0.2
             if "total" in lower and any(term in lower for term in ("subtotal", "sub total")):
                 score -= 0.8
+            if _looks_like_date_amount(token):
+                score -= 2.2
+            if _looks_like_phone_amount(token):
+                score -= 2.0
+            if _looks_like_invoice_id(token):
+                score -= 1.8
+            if lower.startswith(("qty", "quantity", "item", "no.", "number")):
+                score -= 1.2
             if score > best.score:
                 best = _Candidate(normalized, score, line.box, token, line.page_index)
+    if subtotal_candidates:
+        for subtotal in subtotal_candidates:
+            for tax in tax_candidates or (0.0,):
+                expected_total = subtotal + tax
+                best_amount = parse_amount(best.value)
+                if best_amount is not None and abs(best_amount - expected_total) <= 0.06:
+                    best = _Candidate(
+                        best.value,
+                        best.score + 1.2,
+                        best.box,
+                        best.raw_value,
+                        best.page_index,
+                    )
+                    break
     if best.score < 0.9:
         return _Candidate("", 0.0, None)
     return best
@@ -330,6 +455,25 @@ def _normalize_date_candidate(value: str) -> tuple[str | None, bool]:
         first_num = int(first)
         second_num = int(second)
         ambiguous = first_num <= 12 and second_num <= 12
+        if ambiguous:
+            separator = "/" if "/" in cleaned else "-"
+            day_first_formats = (
+                f"%d{separator}%m{separator}%Y",
+                f"%d{separator}%m{separator}%y",
+            )
+            month_first_formats = (
+                f"%m{separator}%d{separator}%Y",
+                f"%m{separator}%d{separator}%y",
+            )
+            for fmt in day_first_formats + month_first_formats:
+                try:
+                    parsed = datetime.strptime(cleaned, fmt)
+                except ValueError:
+                    continue
+                if parsed.year < 100:
+                    year = parsed.year + 2000 if parsed.year < 70 else parsed.year + 1900
+                    parsed = parsed.replace(year=year)
+                return parsed.strftime("%Y-%m-%d"), ambiguous
 
     for fmt in DATE_FORMATS:
         try:
@@ -396,3 +540,20 @@ def _normalize_amount_token(token: str | None) -> str | None:
 def _mean_confidence(words: Iterable[OCRWord]) -> float:
     confidences = [word.confidence for word in words if word.confidence is not None and word.confidence >= 0]
     return sum(confidences) / len(confidences) if confidences else 0.0
+
+
+def _looks_like_date_amount(token: str) -> bool:
+    compact = token.strip()
+    return bool(re.search(r"\d{1,4}[/-]\d{1,2}(?:[/-]\d{1,4})?", compact))
+
+
+def _looks_like_phone_amount(token: str) -> bool:
+    compact = token.strip()
+    digits = re.sub(r"\D", "", compact)
+    return "." not in compact and "," not in compact and len(digits) >= 7 and bool(PHONE_LIKE_REGEX.match(compact))
+
+
+def _looks_like_invoice_id(token: str) -> bool:
+    compact = token.strip()
+    digits = re.sub(r"\D", "", compact)
+    return "." not in compact and "," not in compact and len(digits) >= 7 and bool(INVOICE_ID_REGEX.search(compact))
