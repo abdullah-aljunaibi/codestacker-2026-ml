@@ -100,6 +100,12 @@ class AnomalyTests(unittest.TestCase):
             self.assertEqual(data_a["feature_keys"], data_b["feature_keys"])
             self.assertEqual(data_a["forged_ratio"], data_b["forged_ratio"])
             self.assertEqual(data_a["train_accuracy"], data_b["train_accuracy"])
+            self.assertIn("threshold", data_a)
+            self.assertIn("threshold", data_b)
+            self.assertIsInstance(data_a["threshold"], float)
+            self.assertIsInstance(data_b["threshold"], float)
+            self.assertIsInstance(model_a["threshold"], float)
+            self.assertIsInstance(model_b["threshold"], float)
 
 
 if __name__ == "__main__":
