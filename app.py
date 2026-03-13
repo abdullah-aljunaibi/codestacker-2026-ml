@@ -57,20 +57,30 @@ def draw_boxes(image: Image.Image, boxes: list[tuple[Box, str, str]]) -> Image.I
 
 def render_analysis(name: str, document_path: str, bundle: ModelBundle | None) -> None:
     analysis = analyze_document(document_path, model_bundle=bundle, debug=True)
-    page = load_document_pages(document_path)[0]
+    pages = load_document_pages(document_path)
+    selected_page_index = 0
+    if len(pages) > 1:
+        selected_page_index = st.selectbox(
+            "Page",
+            options=[page.page_index for page in pages],
+            format_func=lambda index: f"Page {index + 1}",
+            key=f"page-selector-{name}-{document_path}",
+        )
+    page = next(page for page in pages if page.page_index == selected_page_index)
 
-    field_boxes = []
-    for field in (
-        analysis.extraction.vendor,
-        analysis.extraction.date,
-        analysis.extraction.total,
-    ):
-        if field.box is not None and field.page_index == 0:
-            field_boxes.append((field.box, "#0f766e", f"{field.name}: {field.value or 'n/a'}"))
+    field_boxes = [
+        (field.box, "#0f766e", f"{field.name}: {field.value or 'n/a'}")
+        for field in (
+            analysis.extraction.vendor,
+            analysis.extraction.date,
+            analysis.extraction.total,
+        )
+        if field.box is not None and field.page_index == selected_page_index
+    ]
     suspicious_boxes = [
         (box, "#b91c1c", "suspicious")
         for box in analysis.anomaly.suspicious_regions
-        if box.page_index == 0
+        if box.page_index == selected_page_index
     ]
 
     st.subheader(name)

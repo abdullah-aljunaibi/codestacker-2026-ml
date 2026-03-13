@@ -276,6 +276,65 @@ def _group_amount_candidate_lines(words: tuple[OCRWord, ...]) -> tuple[tuple[str
     return tuple(line_entries)
 
 
+def _score_amount_candidate_lines(
+    words: tuple[OCRWord, ...],
+) -> tuple[tuple[str, str, float, Box], ...]:
+    lines = _group_amount_candidate_lines(words)
+    if not lines:
+        return ()
+
+    max_bottom = max((line_box.bottom for _, line_box, _ in lines), default=1)
+    candidates: list[tuple[str, str, float, Box]] = []
+    for index, (line_text, line_box, line_confidence) in enumerate(lines):
+        lower = re.sub(r"\s+", " ", line_text.lower()).strip()
+        amount_tokens = [match.group(0) for match in AMOUNT_REGEX.finditer(line_text)]
+        if not amount_tokens:
+            continue
+
+        line_score = 0.0
+        for term in POSITIVE_TOTAL_TERMS:
+            if term in lower:
+                line_score += 2.0 if term != "total" else 1.2
+        for term in NEGATIVE_TOTAL_TERMS:
+            if term in lower:
+                line_score -= 1.4
+        line_midpoint = (line_box.top + line_box.bottom) / 2.0
+        vertical_ratio = line_midpoint / max(max_bottom, 1)
+        if vertical_ratio >= 0.60:
+            line_score += 0.9
+        elif vertical_ratio >= 0.50:
+            line_score += 0.4
+        if index >= max(0, len(lines) - 4):
+            line_score += 0.4
+
+        for token in amount_tokens:
+            normalized = _normalize_amount_token(token)
+            if normalized is None:
+                continue
+            amount = float(normalized)
+            score = line_score
+            if amount > 0:
+                score += 0.8
+            if abs(amount - round(amount)) > 1e-6:
+                score += 0.2
+            if line_confidence >= 65:
+                score += 0.2
+            if "total" in lower and any(term in lower for term in ("subtotal", "sub total")):
+                score -= 0.8
+            if _looks_like_date_amount(token):
+                score -= 2.2
+            if _looks_like_phone_amount(token):
+                score -= 2.0
+            if _looks_like_invoice_id(token):
+                score -= 1.8
+            if lower.startswith(("qty", "quantity", "item", "no.", "number")):
+                score -= 1.2
+            candidates.append((line_text, normalized, score, line_box))
+
+    candidates.sort(key=lambda item: item[2], reverse=True)
+    return tuple(candidates)
+
+
 def _count_conflicting_amount_candidates(words: tuple[OCRWord, ...], predicted_total: float) -> float:
     if predicted_total <= 0:
         return 0.0
@@ -465,6 +524,7 @@ def localize_suspicious_regions(
     page_images: Iterable[Image.Image] | Image.Image | str | Path,
     words: tuple[OCRWord, ...],
     max_regions: int = 6,
+    extraction: ExtractionResult | None = None,
 ) -> tuple[Box, ...]:
     regions: list[Box] = []
     if isinstance(page_images, (str, Path, Image.Image)):
@@ -501,6 +561,56 @@ def localize_suspicious_regions(
 
     block_scores.sort(key=lambda item: item[0], reverse=True)
     regions.extend(box for _, box in block_scores[: max_regions // 2])
+
+    if extraction is not None and pages:
+        ela_pages = tuple(compute_ela_array(page) for page in pages)
+        field_boxes: list[tuple[float, Box]] = []
+        for field_name in ("vendor", "date", "total"):
+            field = getattr(extraction, field_name)
+            if field.box is None:
+                continue
+            page_index = min(max(field.box.page_index, 0), max(len(pages) - 1, 0))
+            page_image = _load_gray_image(pages[page_index])
+            if page_image is None:
+                continue
+            page_width, page_height = page_image.size
+            expanded_box = _expand_box(field.box, page_width, page_height)
+            local_ela = 0.0
+            ela_page = ela_pages[page_index]
+            if ela_page.size:
+                patch = ela_page[expanded_box.top : expanded_box.bottom, expanded_box.left : expanded_box.right]
+                if patch.size:
+                    local_ela = float(np.mean(patch))
+            if field.confidence < 0.5 or local_ela >= 18.0:
+                field_boxes.append((max(1.0 - field.confidence, local_ela / 18.0), expanded_box))
+
+        field_boxes.sort(key=lambda item: item[0], reverse=True)
+        for _, box in field_boxes:
+            if len(regions) >= max_regions:
+                break
+            regions.append(box)
+
+        amount_candidates = _score_amount_candidate_lines(words)
+        if amount_candidates:
+            best_score = amount_candidates[0][2]
+            score_threshold = max(1.4, best_score - 0.6)
+            predicted_total = _normalize_amount_token(extraction.total.value or "")
+            high_scoring: list[tuple[str, float, Box]] = []
+            seen_amounts: set[str] = set()
+            for _, normalized, score, box in amount_candidates:
+                if score < score_threshold or normalized in seen_amounts:
+                    continue
+                seen_amounts.add(normalized)
+                high_scoring.append((normalized, score, box))
+
+            if len(high_scoring) > 1:
+                ambiguous = [entry for entry in high_scoring if entry[0] != predicted_total]
+                if not ambiguous:
+                    ambiguous = high_scoring[1:]
+                for _, _, box in ambiguous:
+                    if len(regions) >= max_regions:
+                        break
+                    regions.append(box)
 
     low_conf_words = [
         word

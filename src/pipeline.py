@@ -63,7 +63,11 @@ def analyze_document(
         score, reasons = heuristic_score(feature_values)
         threshold = DEFAULT_CONFIG.training.anomaly_threshold
 
-    suspicious_regions = localize_suspicious_regions(provisional.page_images, tuple(words))
+    suspicious_regions = localize_suspicious_regions(
+        provisional.page_images,
+        tuple(words),
+        extraction=extraction,
+    )
     return AnalysisResult(
         document_path=document_path,
         ocr_text=ocr_text,
