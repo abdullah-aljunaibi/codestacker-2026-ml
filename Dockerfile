@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     STREAMLIT_SERVER_HEADLESS=true \
-    STREAMLIT_SERVER_PORT=8501 \
+    STREAMLIT_SERVER_PORT=7860 \
     STREAMLIT_SERVER_ADDRESS=0.0.0.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -22,6 +22,6 @@ RUN python -m pip install --upgrade pip && python -m pip install -r requirements
 
 COPY . .
 
-EXPOSE 8501
+EXPOSE 7860
 
 CMD ["streamlit", "run", "app.py"]
