@@ -751,6 +751,10 @@ def train_anomaly_model(records: list[dict[str, Any]], train_dir: str, model_dir
     analysis_meta: list[tuple[AnalysisResult, int]] = []
     predicted_vendors: set[str] = set()
     predicted_amounts: list[float] = []
+    vendor_frequencies: dict[str, int] = {}
+    date_format_frequencies: dict[str, int] = {}
+    known_vendors: set[str] = set()
+    ground_truth_amounts: list[float] = []
 
     for record in records:
         image_path = Path(train_dir) / str(record.get("image_path", ""))
@@ -761,6 +765,23 @@ def train_anomaly_model(records: list[dict[str, Any]], train_dir: str, model_dir
         amount = parse_amount(analysis.extraction.total.value)
         if amount is not None:
             predicted_amounts.append(amount)
+        extraction_label = record.get("label", {})
+        gt_vendor = extraction_label.get("vendor")
+        if isinstance(gt_vendor, str) and gt_vendor.strip():
+            gt_vendor = gt_vendor.strip()
+            vendor_frequencies[gt_vendor] = vendor_frequencies.get(gt_vendor, 0) + 1
+            known_vendors.add(gt_vendor.lower())
+        gt_date = extraction_label.get("date")
+        if isinstance(gt_date, str):
+            from src.extractor import _detect_date_format_pattern
+            dp = _detect_date_format_pattern(gt_date)
+            if dp:
+                date_format_frequencies[dp] = date_format_frequencies.get(dp, 0) + 1
+        gt_total = extraction_label.get("total")
+        if gt_total is not None:
+            gt_amt = parse_amount(str(gt_total))
+            if gt_amt is not None:
+                ground_truth_amounts.append(gt_amt)
         # Drop page_images to free RAM — features were already computed during analyze_document
         analysis_no_images = AnalysisResult(
             document_path=analysis.document_path,
@@ -776,12 +797,18 @@ def train_anomaly_model(records: list[dict[str, Any]], train_dir: str, model_dir
         )
         analysis_meta.append((analysis_no_images, label))
 
+    amount_reference = ground_truth_amounts or predicted_amounts
     stats = {
         "vendors": sorted(predicted_vendors),
-        "amount_mean": float(np.mean(predicted_amounts)) if predicted_amounts else 0.0,
-        "amount_std": float(np.std(predicted_amounts)) if predicted_amounts else 0.0,
-        "amount_q1": float(np.percentile(predicted_amounts, 25)) if predicted_amounts else 0.0,
-        "amount_q3": float(np.percentile(predicted_amounts, 75)) if predicted_amounts else 0.0,
+        "amount_mean": float(np.mean(amount_reference)) if amount_reference else 0.0,
+        "amount_std": float(np.std(amount_reference)) if amount_reference else 0.0,
+        "amount_q1": float(np.percentile(amount_reference, 25)) if amount_reference else 0.0,
+        "amount_q3": float(np.percentile(amount_reference, 75)) if amount_reference else 0.0,
+        "vendor_frequencies": vendor_frequencies,
+        "date_format_frequencies": date_format_frequencies,
+        "known_vendors": sorted(known_vendors),
+        "amount_min": float(min(ground_truth_amounts)) if ground_truth_amounts else 0.0,
+        "amount_max": float(max(ground_truth_amounts)) if ground_truth_amounts else 0.0,
     }
 
     # Pass 2: build feature vectors — re-load pages on demand to avoid holding all in RAM

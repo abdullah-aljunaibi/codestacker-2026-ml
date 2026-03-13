@@ -19,6 +19,7 @@ def analyze_document(
 ) -> AnalysisResult:
     pages = load_document_pages(document_path)
     page_ocr_results = [run_ocr(page.image, page_index=page.page_index) for page in pages]
+    stats = model_bundle.stats if model_bundle is not None else None
 
     words: list[OCRWord] = []
     lines: list[OCRLine] = []
@@ -30,7 +31,7 @@ def analyze_document(
         lines.extend(ocr_result.lines)
         if ocr_result.text.strip():
             text_parts.append(ocr_result.text.strip())
-        extractions.append(extract_fields_from_ocr(ocr_result))
+        extractions.append(extract_fields_from_ocr(ocr_result, stats=stats))
 
     ocr_text = "\n".join(text_parts)
     extraction = _merge_extraction_results(extractions)
@@ -47,7 +48,6 @@ def analyze_document(
         debug={},
     )
 
-    stats = model_bundle.stats if model_bundle is not None else None
     feature_values, vector = build_feature_vector(provisional, stats, page_images=provisional.page_images)
     if model_bundle and model_bundle.anomaly_model_data and model_bundle.anomaly_model_data.get("model") is not None:
         model = model_bundle.anomaly_model_data["model"]

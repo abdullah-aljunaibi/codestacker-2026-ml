@@ -214,12 +214,12 @@ def extract_fields(image_path: str) -> dict[str, str | None]:
     }
 
 
-def extract_fields_from_ocr(ocr_result: OCRResult) -> ExtractionResult:
+def extract_fields_from_ocr(ocr_result: OCRResult, stats: dict[str, object] | None = None) -> ExtractionResult:
     lines = ocr_result.lines or _lines_from_text_or_words(ocr_result.text, ocr_result.words)
     return ExtractionResult(
-        vendor=_candidate_to_field("vendor", _predict_vendor(lines)),
-        date=_candidate_to_field("date", _predict_date(lines)),
-        total=_candidate_to_field("total", _predict_total(lines)),
+        vendor=_candidate_to_field("vendor", _predict_vendor(lines, stats=stats)),
+        date=_candidate_to_field("date", _predict_date(lines, stats=stats)),
+        total=_candidate_to_field("total", _predict_total(lines, stats=stats)),
     )
 
 
@@ -271,10 +271,19 @@ def _lines_from_text_or_words(text: str, words: Iterable[OCRWord] | None) -> tup
     return _text_to_lines(text)
 
 
-def _predict_vendor(lines: tuple[OCRLine, ...]) -> _Candidate:
+def _predict_vendor(lines: tuple[OCRLine, ...], stats: dict[str, object] | None = None) -> _Candidate:
     best = _Candidate(value="", score=-1.0, box=None)
     if not lines:
         return best
+    known_vendor_set = set()
+    if stats is not None:
+        raw_known_vendors = stats.get("known_vendors")
+        if isinstance(raw_known_vendors, list):
+            known_vendor_set = {
+                vendor.strip().lower()
+                for vendor in raw_known_vendors
+                if isinstance(vendor, str) and vendor.strip()
+            }
 
     max_top = max((line.box.bottom for line in lines), default=1)
     min_left = min((line.box.left for line in lines), default=0)
@@ -320,6 +329,10 @@ def _predict_vendor(lines: tuple[OCRLine, ...]) -> _Candidate:
         score += centeredness * 0.8
         if compact_lower in VENDOR_PRIOR_COUNTS:
             score += min(1.6, 0.5 + 0.08 * VENDOR_PRIOR_COUNTS[compact_lower])
+        if known_vendor_set:
+            candidate_tokens = tuple(token for token in re.split(r"\s+", compact_lower) if token)
+            if candidate_tokens and " ".join(candidate_tokens) in known_vendor_set:
+                score += 1.0
         if score > best.score:
             best = _Candidate(text, score, line.box, text, line.page_index)
     if best.score < 1.0:
@@ -327,8 +340,13 @@ def _predict_vendor(lines: tuple[OCRLine, ...]) -> _Candidate:
     return best
 
 
-def _predict_date(lines: tuple[OCRLine, ...]) -> _Candidate:
+def _predict_date(lines: tuple[OCRLine, ...], stats: dict[str, object] | None = None) -> _Candidate:
     best = _Candidate(value="", score=-1.0, box=None)
+    date_format_frequencies = {}
+    if stats is not None:
+        raw_date_format_frequencies = stats.get("date_format_frequencies")
+        if isinstance(raw_date_format_frequencies, dict):
+            date_format_frequencies = raw_date_format_frequencies
     for line in lines:
         lower = line.text.lower()
         normalized_lower = re.sub(r"\s+", " ", lower)
@@ -344,6 +362,9 @@ def _predict_date(lines: tuple[OCRLine, ...]) -> _Candidate:
                 if normalized is None:
                     continue
                 score = 1.2 + context_bonus + (0.4 if not ambiguous else -0.2)
+                matched_pattern = _detect_date_format_pattern(match.group(0))
+                if matched_pattern and matched_pattern in date_format_frequencies:
+                    score += 0.3
                 if has_timestamp:
                     score -= 0.7
                 if line.confidence >= 70:
@@ -355,10 +376,14 @@ def _predict_date(lines: tuple[OCRLine, ...]) -> _Candidate:
     return best
 
 
-def _predict_total(lines: tuple[OCRLine, ...]) -> _Candidate:
+def _predict_total(lines: tuple[OCRLine, ...], stats: dict[str, object] | None = None) -> _Candidate:
     best = _Candidate(value="", score=-1.0, box=None)
     if not lines:
         return best
+    amount_q1 = _get_stat_float(stats, "amount_q1")
+    amount_q3 = _get_stat_float(stats, "amount_q3")
+    amount_mean = _get_stat_float(stats, "amount_mean")
+    amount_std = _get_stat_float(stats, "amount_std")
     max_bottom = max((line.box.bottom for line in lines), default=1)
     subtotal_candidates = []
     tax_candidates = []
@@ -401,6 +426,10 @@ def _predict_total(lines: tuple[OCRLine, ...]) -> _Candidate:
                 score += 0.8
             if abs(amount - round(amount)) > 1e-6:
                 score += 0.2
+            if amount_q1 is not None and amount_q3 is not None and amount_q1 <= amount <= amount_q3:
+                score += 0.5
+            if amount_mean is not None and amount_std is not None and amount_std > 0 and abs(amount - amount_mean) > (3 * amount_std):
+                score -= 0.3
             if line.confidence >= 65:
                 score += 0.2
             if "total" in lower and any(term in lower for term in ("subtotal", "sub total")):
@@ -557,3 +586,26 @@ def _looks_like_invoice_id(token: str) -> bool:
     compact = token.strip()
     digits = re.sub(r"\D", "", compact)
     return "." not in compact and "," not in compact and len(digits) >= 7 and bool(INVOICE_ID_REGEX.search(compact))
+
+
+def _detect_date_format_pattern(value: str) -> str | None:
+    cleaned = re.sub(r"\s+", " ", value.strip().rstrip(".")).replace("Sept", "Sep")
+    for fmt in DATE_FORMATS:
+        try:
+            datetime.strptime(cleaned, fmt)
+        except ValueError:
+            continue
+        return fmt
+    return None
+
+
+def _get_stat_float(stats: dict[str, object] | None, key: str) -> float | None:
+    if stats is None:
+        return None
+    value = stats.get(key)
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
